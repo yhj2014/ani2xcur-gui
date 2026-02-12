@@ -20,7 +20,7 @@ LINUX_CURSOR_SOURCE_PATH = ROOT_PATH / "source"
 """Linux 鼠标指针补全文件目录"""
 
 IMAGE_MAGICK_WINDOWS_DOWNLOAD_URL = os.getenv(
-    "IMAGE_MAGICK_WINDOWS_DOWNLOAD_URL", "https://modelscope.cn/models/licyks/invokeai-core-model/resolve/master/pypatchmatch/ImageMagick-7.1.2-Q16-HDRI.zip"
+    "IMAGE_MAGICK_WINDOWS_DOWNLOAD_URL", "https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/imagemagick/ImageMagick-7.1.2-Q16-HDRI.zip"
 )
 """下载 ImageMagick Windows 版的 URL"""
 
