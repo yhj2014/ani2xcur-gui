@@ -457,7 +457,7 @@ def install_image_magick_linux() -> None:
     elif shutil.which("pacman"):
         # Arch Linux
         logger.debug("匹配到 pacman 包管理器")
-        cmd.append(["pacman", "-Syyu", "imagemagick", "--noconfirm"])
+        cmd.append(["pacman", "-S", "imagemagick", "--noconfirm"])
     elif shutil.which("zypper"):
         # openSUSE
         logger.debug("匹配到 zypper 包管理器")
