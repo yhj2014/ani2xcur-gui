@@ -68,7 +68,3 @@ def get_app() -> typer.Typer:
 def main() -> None:
     """主函数"""
     get_app()()
-
-
-if __name__ == "__main__":
-    main()

@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.scripts]
-"ani2xcur" = "ani2xcur.cli.main:main"
+"ani2xcur" = "ani2xcur.cli.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
