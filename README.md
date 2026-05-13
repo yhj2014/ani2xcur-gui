@@ -183,9 +183,9 @@ ani2xcur cursor set theme <指针名称>
 ani2xcur cursor set size <大小值>
 ```
 
-- **指针默认大小值**: 
-  - Windows 系统中为`1`。
-  - Linux 系统中为`24`。
+- **指针大小值范围**:
+  - Windows 系统中为 `1-15`, 对应 Windows 11 设置中的鼠标指针大小滑块, 默认值为 `1`。
+  - Linux 系统中为 `16-96`, 默认值为 `24`。
 
 
 ### 查看指针信息

@@ -28,6 +28,10 @@ from ani2xcur.utils import (
     lowercase_dict_keys,
 )
 from ani2xcur.manager.base import CURSOR_KEYS
+from ani2xcur.manager.desktop_config.base import (
+    convert_windows_cursor_base_size_to_size,
+    convert_windows_cursor_size_to_base_size,
+)
 
 WINDOWS_CURSOR_CURSORS_PATH = r"Control Panel\Cursors"
 """Windows 鼠标指针配置路径"""
@@ -37,6 +41,27 @@ WINDOWS_CURSOR_CURSORS_SCHEME_PATH = r"Control Panel\Cursors\Schemes"
 
 WINDOWS_ACCESSIBILITY_PATH = r"Software\Microsoft\Accessibility"
 """Windows 无障碍配置路径"""
+
+WINDOWS_CURSOR_SIZE_VALUE_NAME = "CursorSize"
+"""Windows 无障碍鼠标指针大小值名"""
+
+WINDOWS_CURSOR_BASE_SIZE_VALUE_NAME = "CursorBaseSize"
+"""Windows 鼠标指针基础大小值名"""
+
+SPI_SETCURSORS = 0x0057
+"""重新加载系统鼠标指针"""
+
+SPI_SETCURSORBASESIZE = 0x2029
+"""应用 Windows 鼠标指针基础大小"""
+
+SPIF_UPDATEINIFILE = 0x01
+"""将系统参数写入用户配置"""
+
+SPIF_SENDCHANGE = 0x02
+"""广播系统参数变更"""
+
+SPIF_APPLY_CHANGE = SPIF_UPDATEINIFILE | SPIF_SENDCHANGE
+"""应用并广播系统参数变更"""
 
 
 def has_var_string(
@@ -83,9 +108,48 @@ def expand_var_string(
     return result
 
 
-def refresh_system_params() -> None:
-    """通知系统刷新设置以应用更改"""
-    ctypes.windll.user32.SystemParametersInfoW(0x0057, 0, None, 0x01 | 0x02)
+def system_parameters_info(
+    action: int,
+    ui_param: int = 0,
+    pv_param: int | None = 0,
+    flags: int = 0,
+) -> bool:
+    """调用 Windows SystemParametersInfoW
+
+    Args:
+        action (int): 要执行的系统参数操作
+        ui_param (int): 操作需要的整数参数
+        pv_param (int | None): 操作需要的值参数
+        flags (int): 应用系统参数时使用的标志位
+
+    Returns:
+        bool: 调用成功时返回 True, 否则返回 False
+
+    参考资料:
+        https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow
+    """
+    return bool(ctypes.windll.user32.SystemParametersInfoW(action, ui_param, pv_param, flags))
+
+
+def refresh_system_params(
+    cursor_base_size: int | None = None,
+) -> None:
+    """通知系统刷新设置以应用更改
+
+    Args:
+        cursor_base_size (int | None): Windows 鼠标指针基础大小, 传入时会同步应用当前会话中的指针大小
+
+    参考资料:
+        https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow
+        https://stackoverflow.com/questions/60104778/change-and-update-the-size-of-the-cursor-in-windows-10-via-powershell
+        https://www.elevenforum.com/t/reloading-mouse-cursors-and-changing-their-size.37551/
+    """
+    if cursor_base_size is not None:
+        system_parameters_info(SPI_SETCURSORBASESIZE, 0, cursor_base_size, SPIF_APPLY_CHANGE)
+
+    if not system_parameters_info(SPI_SETCURSORS, 0, 0, SPIF_APPLY_CHANGE):
+        if not system_parameters_info(SPI_SETCURSORS, 0, 0, SPIF_SENDCHANGE):
+            system_parameters_info(SPI_SETCURSORS, 0, 0, 0)
 
 
 def get_windows_cursor_theme() -> str:
@@ -108,12 +172,24 @@ def get_windows_cursor_size() -> int | None:
     Returns:
         (int | None): 当前使用的鼠标指针大小
     """
-    return registry_query_value(
-        name="CursorSize",
+    cursor_size = registry_query_value(
+        name=WINDOWS_CURSOR_SIZE_VALUE_NAME,
         sub_key=WINDOWS_ACCESSIBILITY_PATH,
         key=RegistryRootKey.CURRENT_USER,
         access=RegistryAccess.READ,
     )
+    if cursor_size is not None:
+        return cursor_size
+
+    cursor_base_size = registry_query_value(
+        name=WINDOWS_CURSOR_BASE_SIZE_VALUE_NAME,
+        sub_key=WINDOWS_CURSOR_CURSORS_PATH,
+        key=RegistryRootKey.CURRENT_USER,
+        access=RegistryAccess.READ,
+    )
+    if cursor_base_size is None:
+        return None
+    return convert_windows_cursor_base_size_to_size(cursor_base_size)
 
 
 def set_windows_cursor_theme(
@@ -169,15 +245,24 @@ def set_windows_cursor_size(
     Args:
         cursor_size (int): 要设置的鼠标指针大小
     """
+    cursor_base_size = convert_windows_cursor_size_to_base_size(cursor_size)
     registry_set_value(
-        name="CursorSize",
+        name=WINDOWS_CURSOR_SIZE_VALUE_NAME,
         value=cursor_size,
         reg_type=RegistryValueType.DWORD,
         sub_key=WINDOWS_ACCESSIBILITY_PATH,
         key=RegistryRootKey.CURRENT_USER,
         access=RegistryAccess.SET_VALUE,
     )
-    refresh_system_params()
+    registry_set_value(
+        name=WINDOWS_CURSOR_BASE_SIZE_VALUE_NAME,
+        value=cursor_base_size,
+        reg_type=RegistryValueType.DWORD,
+        sub_key=WINDOWS_CURSOR_CURSORS_PATH,
+        key=RegistryRootKey.CURRENT_USER,
+        access=RegistryAccess.SET_VALUE,
+    )
+    refresh_system_params(cursor_base_size=cursor_base_size)
 
 
 def broadcast_settings_change(

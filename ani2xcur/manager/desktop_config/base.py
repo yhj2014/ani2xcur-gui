@@ -13,11 +13,17 @@ class IntRange(NamedTuple):
     """最大值"""
 
 
-WINDOWS_CURSOR_SIZE_RANGE = IntRange(1, 48)
-"""Windows 鼠标指针大小有效值范围"""
+WINDOWS_CURSOR_SIZE_RANGE = IntRange(1, 15)
+"""Windows 鼠标指针大小有效值范围, 对应 Windows 11 设置中的滑块档位"""
+
+WINDOWS_CURSOR_BASE_SIZE_RANGE = IntRange(32, 256)
+"""Windows CursorBaseSize 有效值范围"""
+
+WINDOWS_CURSOR_BASE_SIZE_STEP = 16
+"""Windows CursorBaseSize 每个滑块档位增加的大小"""
 
 LINUX_CURSOR_SIZE_RANGE = IntRange(16, 96)
-"""Windows 鼠标指针大小有效值范围"""
+"""Linux 鼠标指针大小有效值范围"""
 
 
 def check_windows_cursor_size_value(
@@ -37,6 +43,42 @@ def check_windows_cursor_size_value(
     if rng.min <= value <= rng.max:
         return value
     raise ValueError(f"Windows 鼠标指针大小的值 {value} 超过有效范围 [{rng.min}, {rng.max}]")
+
+
+def convert_windows_cursor_size_to_base_size(
+    value: int,
+) -> int:
+    """将 Windows 设置页中的鼠标指针大小档位转换为 CursorBaseSize 值
+
+    Args:
+        value (int): Windows 设置页中的鼠标指针大小档位
+    Returns:
+        int: CursorBaseSize 注册表值
+    """
+    check_windows_cursor_size_value(value)
+    return WINDOWS_CURSOR_BASE_SIZE_RANGE.min + (value - WINDOWS_CURSOR_SIZE_RANGE.min) * WINDOWS_CURSOR_BASE_SIZE_STEP
+
+
+def convert_windows_cursor_base_size_to_size(
+    value: int,
+) -> int | None:
+    """将 CursorBaseSize 值转换为 Windows 设置页中的鼠标指针大小档位
+
+    Args:
+        value (int): CursorBaseSize 注册表值
+    Returns:
+        (int | None): 对应的鼠标指针大小档位, 无法匹配时返回 None
+    """
+    rng = WINDOWS_CURSOR_BASE_SIZE_RANGE
+    if not isinstance(value, int):
+        raise TypeError(f"Windows CursorBaseSize 值应为 int 类型, 但得到 {type(value).__name__} 类型")
+    if not rng.min <= value <= rng.max:
+        return None
+
+    offset = value - rng.min
+    if offset % WINDOWS_CURSOR_BASE_SIZE_STEP != 0:
+        return None
+    return WINDOWS_CURSOR_SIZE_RANGE.min + offset // WINDOWS_CURSOR_BASE_SIZE_STEP
 
 
 def check_linux_cursor_size_value(
