@@ -28,17 +28,17 @@ jobs:
           uv pip install ruff ty python-docstring-checker
 
       - name: Run Ruff
-        run: uv run python -m ruff check
+        run: uv run python -m ruff check ani2xcur
 
       - name: Run ty (Linux)
         run: |
           PYTHON_PATH="$(uv run python -c 'import sys; print(sys.executable)')"
-          uv run python -m ty check --python "$PYTHON_PATH" --python-platform linux --output-format concise
+          uv run python -m ty check ani2xcur --python "$PYTHON_PATH" --python-platform linux --output-format concise
 
       - name: Run ty (Windows)
         run: |
           PYTHON_PATH="$(uv run python -c 'import sys; print(sys.executable)')"
-          uv run python -m ty check --python "$PYTHON_PATH" --python-platform win32 --output-format concise
+          uv run python -m ty check ani2xcur --python "$PYTHON_PATH" --python-platform win32 --output-format concise
 
       - name: Check docstrings
         run: uv run python -m python_docstring_checker ani2xcur
