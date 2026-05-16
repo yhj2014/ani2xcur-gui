@@ -21,6 +21,9 @@ _✨一站式鼠标指针转换与管理工具_
     <a href="https://github.com/licyk/ani2xcur-cli/actions/workflows/lint.yml" style="margin: 2px;">
       <img src="https://github.com/licyk/ani2xcur-cli/actions/workflows/lint.yml/badge.svg" alt="Ruff Lint">
     </a>
+    <a href="https://github.com/licyk/ani2xcur-cli/actions/workflows/pytest.yml" style="margin: 2px;">
+      <img src="https://github.com/licyk/ani2xcur-cli/actions/workflows/pytest.yml/badge.svg" alt="Pytest">
+    </a>
     <a href="https://github.com/licyk/ani2xcur-cli/actions/workflows/release.yml" style="margin: 2px;">
       <img src="https://github.com/licyk/ani2xcur-cli/actions/workflows/release.yml/badge.svg" alt="Release">
     </a>
