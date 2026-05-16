@@ -79,3 +79,9 @@ indent-width = 4
 lint.ignore = [
     "E402" # module-import-not-at-top-of-file
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: 依赖真实 win2xcur/ImageMagick 的转换烟雾测试",
+]
+
