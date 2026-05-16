@@ -69,7 +69,7 @@ def _section_var(
     parsed: ParsedINF,
     section_name: str,
 ) -> dict[str, str | list[str]]:
-    """Return a section's variable mapping with its concrete parser type."""
+    """获取指定节中的变量映射，并保留解析器返回的具体类型。"""
     return parsed[section_name].get("var", {})
 
 
@@ -77,7 +77,7 @@ def _section_constant(
     parsed: ParsedINF,
     section_name: str,
 ) -> list[str]:
-    """Return a section's constant lines with their concrete parser type."""
+    """获取指定节中的常量行列表，并保留解析器返回的具体类型。"""
     return parsed[section_name].get("constant", [])
 
 

@@ -112,7 +112,7 @@ def expand_var_string(
 def _ctypes_windll() -> Any:
     windll = getattr(ctypes, "windll", None)
     if windll is None:
-        raise NotImplementedError("Windows system parameter APIs are only available on Windows")
+        raise NotImplementedError("Windows 系统参数 API 只能在 Windows 系统中使用")
     return windll
 
 
@@ -295,7 +295,7 @@ def broadcast_settings_change(
     # SMTO_ABORTIFHUNG: 如果目标窗口挂起，则立即返回
 
     if win32gui is None or win32con is None:
-        raise ImportError("pywin32 is required to broadcast Windows settings changes")
+        raise ImportError("广播 Windows 设置变更需要安装 pywin32")
 
     result = win32gui.SendMessageTimeout(  # pylint: disable=c-extension-no-member,no-member
         win32con.HWND_BROADCAST,
@@ -325,7 +325,7 @@ def create_windows_shortcut(
         icon_path (Path | None): 图标路径
     """
     if win32com_client is None:
-        raise ImportError("pywin32 is required to create Windows shortcuts")
+        raise ImportError("创建 Windows 快捷方式需要安装 pywin32")
 
     shell = win32com_client.Dispatch("WScript.Shell")
     shortcut = shell.CreateShortCut(str(shortcut_path))

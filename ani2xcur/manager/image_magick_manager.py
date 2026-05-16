@@ -572,7 +572,7 @@ def find_wand_library_paths() -> Generator[tuple[str | None, str | None], None, 
         # 我们需要将这些文件夹添加到 PATH 环境变量中, 否则稍后加载 DLL 时会失败.
         try:
             if winreg is None:
-                raise OSError("winreg is not available")
+                raise OSError("当前环境无法使用 winreg")
             # 打开 Windows 注册表中 ImageMagick 的配置项
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\ImageMagick\Current") as reg_key:
                 # 从注册表中查询库路径、编解码器模块路径和滤镜模块路径
@@ -593,7 +593,7 @@ def find_wand_library_paths() -> Generator[tuple[str | None, str | None], None, 
     # 辅助函数: 构建 ImageMagick 路径
     def magick_path(path: tuple[str, ...]) -> str:
         if magick_home is None:
-            raise RuntimeError("MAGICK_HOME is not configured")
+            raise RuntimeError("未配置 MAGICK_HOME 环境变量")
         return os.path.join(magick_home, *path)
 
     # 生成版本和选项的所有组合

@@ -135,7 +135,7 @@ else:
 
 def _require_windows_registry() -> None:
     if sys.platform != "win32":
-        raise NotImplementedError("Windows registry APIs are only available on Windows")
+        raise NotImplementedError("Windows 注册表 API 只能在 Windows 系统中使用")
 
 
 def _root_key(key: RegistryRootKey | None) -> int:
