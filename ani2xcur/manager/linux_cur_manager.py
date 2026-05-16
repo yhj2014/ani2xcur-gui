@@ -473,7 +473,14 @@ Mate:
     gsettings set org.mate.peripherals-mouse cursor-theme "${cursor_name}"
 
 KDE:
-    kwriteconfig5 --file kcminputrc --group Mouse --key cursorTheme "${cursor_name}"
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme "${cursor_name}"
+    elif command -v kwriteconfig5 >/dev/null 2>&1; then
+        kwriteconfig5 --file kcminputrc --group Mouse --key cursorTheme "${cursor_name}"
+    fi
+    if command -v plasma-apply-cursortheme >/dev/null 2>&1; then
+        plasma-apply-cursortheme "${cursor_name}"
+    fi
 
 Xfce:
     xfconf-query --channel xsettings --property /Gtk/CursorThemeName --set "${cursor_name}"

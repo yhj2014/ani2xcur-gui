@@ -6,17 +6,37 @@ from ani2xcur.cmd import run_cmd
 from ani2xcur.utils import safe_convert_to_int
 
 
+def _which_first(*names: str) -> str | None:
+    for name in names:
+        if shutil.which(name):
+            return name
+    return None
+
+
+def _readconfig_executable() -> str | None:
+    return _which_first("kreadconfig6", "kreadconfig5", "kreadconfig")
+
+
+def _writeconfig_executable() -> str | None:
+    return _which_first("kwriteconfig6", "kwriteconfig5", "kwriteconfig")
+
+
+def _apply_cursor_theme(cursor_name: str) -> None:
+    executable = _which_first("plasma-apply-cursortheme")
+    if executable is None:
+        return
+
+    run_cmd([executable, cursor_name], live=False, check=False)
+
+
 def get_kde_cursor_theme() -> str | None:
     """获取 KDE 桌面当前使用的鼠标指针配置名称
 
     Returns:
         (str | None): 当前使用的鼠标指针名称
     """
-    if shutil.which("kreadconfig5"):
-        executable = "kreadconfig5"
-    elif shutil.which("kreadconfig6"):
-        executable = "kreadconfig6"
-    else:
+    executable = _readconfig_executable()
+    if executable is None:
         return None
 
     result = run_cmd(
@@ -33,11 +53,12 @@ def get_kde_cursor_theme() -> str | None:
         check=False,
     )
 
-    if isinstance(result, str):
-        result = result.strip()
+    if not isinstance(result, str):
+        return None
 
+    result = result.strip()
     if result == "":
-        result = None
+        return None
 
     return result
 
@@ -48,11 +69,8 @@ def get_kde_cursor_size() -> int | None:
     Returns:
         (int | None): 当前使用的鼠标指针大小
     """
-    if shutil.which("kreadconfig5"):
-        executable = "kreadconfig5"
-    elif shutil.which("kreadconfig6"):
-        executable = "kreadconfig6"
-    else:
+    executable = _readconfig_executable()
+    if executable is None:
         return None
 
     result = run_cmd(
@@ -69,13 +87,17 @@ def get_kde_cursor_size() -> int | None:
         check=False,
     )
 
-    if isinstance(result, str):
-        result = result.strip()
+    if not isinstance(result, str):
+        return None
 
+    result = result.strip()
     if result == "":
-        result = None
+        return None
 
-    return safe_convert_to_int(result)
+    cursor_size = safe_convert_to_int(result)
+    if isinstance(cursor_size, int):
+        return cursor_size
+    return None
 
 
 def set_kde_cursor_theme(
@@ -86,18 +108,15 @@ def set_kde_cursor_theme(
     Args:
         cursor_name (str): 要设置的鼠标指针配置名称
     """
-    if shutil.which("kwriteconfig5"):
-        executable = "kwriteconfig5"
-    elif shutil.which("kwriteconfig6"):
-        executable = "kwriteconfig6"
-    else:
-        return
+    executable = _writeconfig_executable()
+    if executable is not None:
+        run_cmd(
+            [executable, "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme", cursor_name],
+            live=False,
+            check=False,
+        )
 
-    run_cmd(
-        [executable, "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme", cursor_name],
-        live=False,
-        check=False,
-    )
+    _apply_cursor_theme(cursor_name)
 
 
 def set_kde_cursor_size(
@@ -108,11 +127,8 @@ def set_kde_cursor_size(
     Args:
         cursor_size (int): 要设置的鼠标指针大小
     """
-    if shutil.which("kwriteconfig5"):
-        executable = "kwriteconfig5"
-    elif shutil.which("kwriteconfig6"):
-        executable = "kwriteconfig6"
-    else:
+    executable = _writeconfig_executable()
+    if executable is None:
         return
 
     run_cmd(
@@ -120,3 +136,7 @@ def set_kde_cursor_size(
         live=False,
         check=False,
     )
+
+    cursor_name = get_kde_cursor_theme()
+    if cursor_name is not None:
+        _apply_cursor_theme(cursor_name)
