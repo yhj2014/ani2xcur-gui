@@ -10,6 +10,7 @@ def _set_config_paths(monkeypatch, tmp_path):
 
 def test_set_lxqt_cursor_theme_writes_session_and_xresources(monkeypatch, tmp_path):
     calls = []
+    x_calls = []
     _set_config_paths(monkeypatch, tmp_path)
 
     def fake_which(name):
@@ -23,6 +24,7 @@ def test_set_lxqt_cursor_theme_writes_session_and_xresources(monkeypatch, tmp_pa
 
     monkeypatch.setattr(lxqt.shutil, "which", fake_which)
     monkeypatch.setattr(lxqt, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(lxqt, "apply_x_cursor_theme", lambda name, size=None: x_calls.append((name, size)))
 
     lxqt.set_lxqt_cursor_theme("Bibata")
 
@@ -35,10 +37,12 @@ def test_set_lxqt_cursor_theme_writes_session_and_xresources(monkeypatch, tmp_pa
         ["xrdb", "-merge", str(x_org.X_RESOURCES_PATH)],
         ["xsetroot", "-cursor_name", "left_ptr"],
     ]
+    assert x_calls == [("Bibata", None)]
 
 
 def test_set_lxqt_cursor_size_writes_session_and_xresources(monkeypatch, tmp_path):
     calls = []
+    x_calls = []
     _set_config_paths(monkeypatch, tmp_path)
 
     def fake_which(name):
@@ -52,6 +56,7 @@ def test_set_lxqt_cursor_size_writes_session_and_xresources(monkeypatch, tmp_pat
 
     monkeypatch.setattr(lxqt.shutil, "which", fake_which)
     monkeypatch.setattr(lxqt, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(lxqt, "apply_x_cursor_theme", lambda name, size=None: x_calls.append((name, size)))
 
     lxqt.set_lxqt_cursor_size(32)
 
@@ -64,6 +69,29 @@ def test_set_lxqt_cursor_size_writes_session_and_xresources(monkeypatch, tmp_pat
         ["xrdb", "-merge", str(x_org.X_RESOURCES_PATH)],
         ["xsetroot", "-cursor_name", "left_ptr"],
     ]
+    assert x_calls == [(None, 32)]
+
+
+def test_set_lxqt_cursor_theme_updates_dbus_activation_environment(monkeypatch, tmp_path):
+    calls = []
+    _set_config_paths(monkeypatch, tmp_path)
+
+    def fake_which(name):
+        if name == "dbus-update-activation-environment":
+            return f"/usr/bin/{name}"
+        return None
+
+    def fake_run_cmd(command, **kwargs):
+        calls.append(command)
+        return None
+
+    monkeypatch.setattr(lxqt.shutil, "which", fake_which)
+    monkeypatch.setattr(lxqt, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(lxqt, "apply_x_cursor_theme", lambda name, size=None: None)
+
+    lxqt.set_lxqt_cursor_theme("Bibata")
+
+    assert calls == [["dbus-update-activation-environment", "--systemd", "XCURSOR_THEME=Bibata"]]
 
 
 def test_get_lxqt_cursor_theme_falls_back_to_xresources(monkeypatch, tmp_path):

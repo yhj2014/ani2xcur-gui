@@ -473,13 +473,16 @@ Mate:
     gsettings set org.mate.peripherals-mouse cursor-theme "${cursor_name}"
 
 KDE:
+    if command -v plasma-apply-cursortheme >/dev/null 2>&1; then
+        plasma-apply-cursortheme "${cursor_name}"
+    fi
     if command -v kwriteconfig6 >/dev/null 2>&1; then
         kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme "${cursor_name}"
     elif command -v kwriteconfig5 >/dev/null 2>&1; then
         kwriteconfig5 --file kcminputrc --group Mouse --key cursorTheme "${cursor_name}"
     fi
-    if command -v plasma-apply-cursortheme >/dev/null 2>&1; then
-        plasma-apply-cursortheme "${cursor_name}"
+    if command -v dbus-send >/dev/null 2>&1; then
+        dbus-send --session --type=signal /KGlobalSettings org.kde.KGlobalSettings.notifyChange int32:5 int32:0
     fi
 
 LXQt:
@@ -502,6 +505,9 @@ LXQt:
     fi
     if command -v xrdb >/dev/null 2>&1; then
         xrdb -merge "${HOME}/.Xresources"
+    fi
+    if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+        dbus-update-activation-environment --systemd "XCURSOR_THEME=${cursor_name}"
     fi
     if command -v xsetroot >/dev/null 2>&1; then
         xsetroot -cursor_name left_ptr

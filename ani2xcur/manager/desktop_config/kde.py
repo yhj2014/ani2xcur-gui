@@ -1,9 +1,14 @@
-"""KDE 桌面环境配置工具"""
+"""KDE 桌面环境配置工具
+
+参考资料:
+- KDE 当前会话光标未即时刷新问题: https://bugs.kde.org/show_bug.cgi?id=470265
+"""
 
 import shutil
 
 from ani2xcur.cmd import run_cmd
 from ani2xcur.utils import safe_convert_to_int
+from ani2xcur.manager.desktop_config.x_cursor import apply_x_cursor_theme
 
 
 def _which_first(*names: str) -> str | None:
@@ -21,12 +26,36 @@ def _writeconfig_executable() -> str | None:
     return _which_first("kwriteconfig6", "kwriteconfig5", "kwriteconfig")
 
 
-def _apply_cursor_theme(cursor_name: str) -> None:
+def _apply_plasma_cursor_theme(cursor_name: str) -> None:
     executable = _which_first("plasma-apply-cursortheme")
     if executable is None:
         return
 
     run_cmd([executable, cursor_name], live=False, check=False)
+
+
+def _notify_kde_cursor_change() -> None:
+    if not shutil.which("dbus-send"):
+        return
+
+    run_cmd(
+        [
+            "dbus-send",
+            "--session",
+            "--type=signal",
+            "/KGlobalSettings",
+            "org.kde.KGlobalSettings.notifyChange",
+            "int32:5",
+            "int32:0",
+        ],
+        live=False,
+        check=False,
+    )
+
+
+def _refresh_current_session(cursor_name: str, cursor_size: int | None = None) -> None:
+    _notify_kde_cursor_change()
+    apply_x_cursor_theme(cursor_name, cursor_size)
 
 
 def get_kde_cursor_theme() -> str | None:
@@ -108,6 +137,8 @@ def set_kde_cursor_theme(
     Args:
         cursor_name (str): 要设置的鼠标指针配置名称
     """
+    _apply_plasma_cursor_theme(cursor_name)
+
     executable = _writeconfig_executable()
     if executable is not None:
         run_cmd(
@@ -116,7 +147,7 @@ def set_kde_cursor_theme(
             check=False,
         )
 
-    _apply_cursor_theme(cursor_name)
+    _refresh_current_session(cursor_name, get_kde_cursor_size())
 
 
 def set_kde_cursor_size(
@@ -139,4 +170,5 @@ def set_kde_cursor_size(
 
     cursor_name = get_kde_cursor_theme()
     if cursor_name is not None:
-        _apply_cursor_theme(cursor_name)
+        _apply_plasma_cursor_theme(cursor_name)
+        _refresh_current_session(cursor_name, cursor_size)

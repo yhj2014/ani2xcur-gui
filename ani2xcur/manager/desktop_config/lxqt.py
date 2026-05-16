@@ -1,4 +1,8 @@
-"""LXQT 桌面环境配置工具"""
+"""LXQT 桌面环境配置工具
+
+参考资料:
+- LXQt 1.4.0 将鼠标指针配置写入 Xresources: https://lxqt-project.org/release/2023/11/05/lxqt-config-1-4-0/
+"""
 
 import shutil
 import configparser
@@ -7,6 +11,7 @@ from pathlib import Path
 from ani2xcur.cmd import run_cmd
 from ani2xcur.utils import safe_convert_to_int
 from ani2xcur.manager.desktop_config import x_org
+from ani2xcur.manager.desktop_config.x_cursor import apply_x_cursor_theme
 
 LXQT_CONFIG_PATH = Path("~/.config/lxqt/session.conf").expanduser()
 """LXQT 桌面的配置文件路径"""
@@ -47,8 +52,29 @@ def _refresh_root_cursor() -> None:
     run_cmd(["xsetroot", "-cursor_name", "left_ptr"], live=False, check=False)
 
 
-def _apply_lxqt_cursor_config() -> None:
+def _update_session_environment(cursor_name: str | None, cursor_size: int | None) -> None:
+    if not shutil.which("dbus-update-activation-environment"):
+        return
+
+    variables = []
+    if cursor_name is not None:
+        variables.append(f"XCURSOR_THEME={cursor_name}")
+    if cursor_size is not None:
+        variables.append(f"XCURSOR_SIZE={cursor_size}")
+    if not variables:
+        return
+
+    run_cmd(
+        ["dbus-update-activation-environment", "--systemd", *variables],
+        live=False,
+        check=False,
+    )
+
+
+def _apply_lxqt_cursor_config(cursor_name: str | None, cursor_size: int | None) -> None:
     _merge_x_resources()
+    _update_session_environment(cursor_name, cursor_size)
+    apply_x_cursor_theme(cursor_name, cursor_size)
     _refresh_root_cursor()
 
 
@@ -96,7 +122,7 @@ def set_lxqt_cursor_theme(
     _write_lxqt_config(config)
 
     x_org.set_x_resources_cursor_theme(cursor_name)
-    _apply_lxqt_cursor_config()
+    _apply_lxqt_cursor_config(cursor_name, get_lxqt_cursor_size())
 
 
 def set_lxqt_cursor_size(
@@ -113,4 +139,4 @@ def set_lxqt_cursor_size(
     _write_lxqt_config(config)
 
     x_org.set_x_resources_cursor_size(cursor_size)
-    _apply_lxqt_cursor_config()
+    _apply_lxqt_cursor_config(get_lxqt_cursor_theme(), cursor_size)
