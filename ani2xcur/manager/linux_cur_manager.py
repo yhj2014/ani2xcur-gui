@@ -118,11 +118,38 @@ class InstallLinuxSchemeInfo(TypedDict):
     """鼠标指针类型与对应的路径地图"""
 
 
+def _get_linux_scheme_name(
+    theme_info: dict[str, str | list[str]],
+) -> str:
+    """从 Icon Theme 信息中获取鼠标指针方案名称
+
+    Args:
+        theme_info (dict[str, str | list[str]]): Icon Theme 配置信息
+    Returns:
+        str: 鼠标指针方案名称
+    Raises:
+        ValueError: Name 和 Inherits 都缺少合法值时
+    """
+    scheme_name_value = theme_info.get("Name")
+    if isinstance(scheme_name_value, str) and scheme_name_value.strip():
+        return scheme_name_value
+
+    inherits_value = theme_info.get("Inherits")
+    if isinstance(inherits_value, str) and inherits_value.strip():
+        return inherits_value
+    if isinstance(inherits_value, list):
+        for value in inherits_value:
+            if value.strip():
+                return value
+
+    raise ValueError("Icon Theme 中缺少合法的 Name 字段, 且没有可用的 Inherits 字段")
+
+
 def extract_scheme_info_from_desktop_entry(
     desktop_entry_file: Path,
 ) -> InstallLinuxSchemeInfo:
     """从 Desktop Entry 文件中获取鼠标指针配置
-    
+
     Args:
         desktop_entry_file (Path): Desktop Entry 文件路径
     Returns:
@@ -133,10 +160,7 @@ def extract_scheme_info_from_desktop_entry(
     """
     desktop_entry_content = parse_desktop_entry_content(desktop_entry_file)
     theme_info = desktop_entry_content["Icon Theme"]
-    scheme_name_value = theme_info.get("Name")
-    if not isinstance(scheme_name_value, str):
-        raise ValueError("Icon Theme 中缺少合法的 Name 字段")
-    scheme_name = scheme_name_value
+    scheme_name = _get_linux_scheme_name(theme_info)
     cursor_path = desktop_entry_file.parent / "cursors"
     if not cursor_path.is_dir():
         raise FileNotFoundError(f"未找到 {cursor_path} 目录, 无法搜索已有的鼠标指针文件")
