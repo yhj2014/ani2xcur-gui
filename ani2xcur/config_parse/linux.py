@@ -52,6 +52,14 @@ class KnownDesktopEntrySections(Protocol):
     ) -> bool: ...
 
 
+def _section_var(
+    parsed: ParsedINF,
+    section_name: str,
+) -> dict[str, str | list[str]]:
+    """Return a section's variable mapping with its concrete parser type."""
+    return parsed[section_name].get("var", {})
+
+
 def preprocess_desktop_entry_to_cursor_scheme(
     parsed: ParsedINF,
 ) -> CursorShemeDesktopEntry:
@@ -68,16 +76,10 @@ def preprocess_desktop_entry_to_cursor_scheme(
         ValueError: 当鼠标指针配置文件不完整时
     """
 
-    out: CursorShemeDesktopEntry = {}
-    parsed_known = cast(KnownDesktopEntrySections, parsed)
-
-    if "Icon Theme" in parsed_known:
-        # 合并 var 和 constant（如果需要可扩展）
-        out["Icon Theme"] = parsed_known["Icon Theme"].get("var", {})
-    else:
+    if "Icon Theme" not in parsed:
         raise ValueError("未找到 Icon Theme 键, 鼠标指针配置不完整")
 
-    return out
+    return {"Icon Theme": _section_var(parsed, "Icon Theme")}
 
 
 def parse_desktop_entry_content(

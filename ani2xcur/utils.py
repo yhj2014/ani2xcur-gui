@@ -251,8 +251,11 @@ def is_admin_on_windows() -> bool:
     Returns:
         bool: 当使用管理员运行时返回 True
     """
+    windll = getattr(ctypes, "windll", None)
+    if windll is None:
+        return False
     try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
+        return bool(windll.shell32.IsUserAnAdmin())
     except AttributeError:
         return False
 
@@ -267,12 +270,12 @@ def is_root_on_linux() -> bool:
 
 
 def generate_random_string(
-    length: int | None = 8,
+    length: int = 8,
     chars: str | None = None,
-    include_uppercase: bool | None = True,
-    include_lowercase: bool | None = True,
-    include_digits: bool | None = True,
-    include_special: bool | None = False,
+    include_uppercase: bool = True,
+    include_lowercase: bool = True,
+    include_digits: bool = True,
+    include_special: bool = False,
 ) -> str:
     """
     生成随机字符串

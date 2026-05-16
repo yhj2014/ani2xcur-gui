@@ -31,8 +31,8 @@ logger = get_logger(
 def find_desktop_entry_file(
     input_file: Path | str,
     temp_dir: Path,
-    depth: int | None = 0,
-    visited: set[Path] | None = None,
+    depth: int = 0,
+    visited: set[Path | str] | None = None,
     is_toplevel: bool = True,  # pylint: disable=unused-argument
 ) -> Path | None:
     """搜索 DesktopEntry 文件路径
@@ -56,7 +56,8 @@ def find_desktop_entry_file(
 
     # 预处理: 如果是字符串路径且不是 URL, 先转为 Path
     # 这样可以确保 visited 集合中的 Path 都是 resolve 过的, 避免字符串路径绕过去重
-    is_url = is_http_or_https(input_file)
+    input_url = str(input_file)
+    is_url = is_http_or_https(input_url)
 
     # 统一去重检查 (针对 URL 或 Path)
     if input_file in visited:
@@ -68,10 +69,10 @@ def find_desktop_entry_file(
 
     # 处理 URL 情况
     if is_url:
-        visited.add(input_file)
+        visited.add(input_url)
         try:
             download_file = download_file_from_url(
-                url=input_file,
+                url=input_url,
                 save_path=temp_dir,
             )
             if not is_supported_archive_format(download_file):
@@ -158,10 +159,10 @@ def find_desktop_entry_file(
 
 
 def find_inf_file(
-    input_file: Path,
+    input_file: Path | str,
     temp_dir: Path,
-    depth: int | None = 0,
-    visited: set[Path] | None = None,
+    depth: int = 0,
+    visited: set[Path | str] | None = None,
     is_toplevel: bool = True,
 ) -> Path | None:
     """搜索 INF 文件路径
@@ -192,11 +193,12 @@ def find_inf_file(
         return None
 
     # 检测为下载链接时
-    if is_http_or_https(input_file):
-        visited.add(input_file)
+    input_url = str(input_file)
+    if is_http_or_https(input_url):
+        visited.add(input_url)
         try:
             download_file = download_file_from_url(
-                url=input_file,
+                url=input_url,
                 save_path=temp_dir,
             )
             if not is_supported_archive_format(download_file):

@@ -10,11 +10,11 @@ XDG_CONFIG_SHARE_PATH = Path("~/.local/share/icons/default/index.theme").expandu
 """XDG 配置文件路径 (共享路径)"""
 
 
-def get_xdg_cursor_theme() -> tuple[str, str] | None:
+def get_xdg_cursor_theme() -> tuple[str | None, str | None]:
     """获取 XDG 标准方案的当前使用的鼠标指针配置名称
 
     Returns:
-        (tuple[str, str] | None): 当前使用的鼠标指针名称
+        (tuple[str | None, str | None]): 当前使用的鼠标指针名称
     """
     config = configparser.ConfigParser()
     config_share = configparser.ConfigParser()

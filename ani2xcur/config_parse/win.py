@@ -65,6 +65,34 @@ class KnownINFSections(Protocol):
     ) -> bool: ...
 
 
+def _section_var(
+    parsed: ParsedINF,
+    section_name: str,
+) -> dict[str, str | list[str]]:
+    """Return a section's variable mapping with its concrete parser type."""
+    return parsed[section_name].get("var", {})
+
+
+def _section_constant(
+    parsed: ParsedINF,
+    section_name: str,
+) -> list[str]:
+    """Return a section's constant lines with their concrete parser type."""
+    return parsed[section_name].get("constant", [])
+
+
+def _ensure_str_dict(
+    data: dict[str, str | list[str]],
+    section_name: str,
+) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for key, value in data.items():
+        if not isinstance(value, str):
+            raise ValueError(f"{section_name} 中的 {key} 必须为字符串")
+        result[key] = value
+    return result
+
+
 def preprocess_inf_to_cursor_scheme(
     parsed: ParsedINF,
 ) -> CursorShemeINF:
@@ -93,37 +121,35 @@ def preprocess_inf_to_cursor_scheme(
         return v if isinstance(v, list) else [v]
 
     out: CursorShemeINF = {}
-    parsed_known = cast(KnownINFSections, parsed)
 
-    if "Version" in parsed_known:
-        # 合并 var 和 constant（如果需要可扩展）
-        out["Version"] = parsed_known["Version"].get("var", {})
+    if "Version" in parsed:
+        out["Version"] = _section_var(parsed, "Version")
 
-    if "DefaultInstall" in parsed_known:
+    if "DefaultInstall" in parsed:
         di: dict[str, list[str]] = {}
-        for k, v in parsed_known["DefaultInstall"].get("var", {}).items():
+        for k, v in _section_var(parsed, "DefaultInstall").items():
             di[k] = _ensure_list(v)
         out["DefaultInstall"] = di
 
-    if "DestinationDirs" in parsed_known:
-        out["DestinationDirs"] = parsed_known["DestinationDirs"].get("var", {})
+    if "DestinationDirs" in parsed:
+        out["DestinationDirs"] = _section_var(parsed, "DestinationDirs")
 
     # 一些节在不同 INF 中可能为 var 或 constant，这里以常见样式提取
-    if "Scheme.Reg" in parsed_known:
-        out["Scheme.Reg"] = parsed_known["Scheme.Reg"].get("constant", [])
+    if "Scheme.Reg" in parsed:
+        out["Scheme.Reg"] = _section_constant(parsed, "Scheme.Reg")
     else:
         raise ValueError("未找到 Scheme.Reg 键, 鼠标指针配置不完整")
 
-    if "Wreg" in parsed_known:
-        out["Wreg"] = parsed_known["Wreg"].get("constant", [])
+    if "Wreg" in parsed:
+        out["Wreg"] = _section_constant(parsed, "Wreg")
 
-    if "Scheme.Cur" in parsed_known:
-        out["Scheme.Cur"] = parsed_known["Scheme.Cur"].get("constant", [])
+    if "Scheme.Cur" in parsed:
+        out["Scheme.Cur"] = _section_constant(parsed, "Scheme.Cur")
     else:
         raise ValueError("未找到 Scheme.Cur 键, 鼠标指针配置不完整")
 
-    if "Strings" in parsed_known:
-        out["Strings"] = parsed_known["Strings"].get("var", {})
+    if "Strings" in parsed:
+        out["Strings"] = _ensure_str_dict(_section_var(parsed, "Strings"), "Strings")
     else:
         raise ValueError("未找到 Strings 键, 鼠标指针配置不完整")
 
@@ -151,7 +177,7 @@ def parse_inf_file_content(
 
 def dict_to_inf_strings_format(
     data_dict: dict[str, str],
-    indent_width: int | None = 12,
+    indent_width: int = 12,
 ) -> str:
     """
     将字典转换为 INF 文件 [Strings] 部分的格式

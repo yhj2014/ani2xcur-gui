@@ -127,10 +127,10 @@ def copy_files(
 
 def get_file_list(
     path: Path,
-    resolve: bool | None = False,
-    max_depth: int | None = -1,
-    show_progress: bool | None = True,
-    include_dirs: bool | None = False,
+    resolve: bool = False,
+    max_depth: int = -1,
+    show_progress: bool = True,
+    include_dirs: bool = False,
 ) -> list[Path]:
     """获取当前路径下的所有文件（和可选的目录）的绝对路径
 

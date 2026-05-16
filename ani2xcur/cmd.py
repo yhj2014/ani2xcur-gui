@@ -43,6 +43,7 @@ import sys
 import shlex
 import subprocess
 from pathlib import Path
+from typing import Any
 
 from ani2xcur.logger import get_logger
 from ani2xcur.config import (
@@ -119,7 +120,7 @@ def run_cmd(
 
     command_to_exec = preprocess_command(command=command, shell=shell)
 
-    kwargs = {
+    kwargs: dict[str, Any] = {
         "args": command_to_exec,
         "shell": shell,
         "env": custom_env,

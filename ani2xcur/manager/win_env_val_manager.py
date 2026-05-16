@@ -12,10 +12,10 @@ from ani2xcur.manager.regedit import (
     registry_delete_value,
 )
 
-WINDOWS_ENV_VALUE_REGESTRY_PATH_SYSTEM = [RegistryRootKey.LOCAL_MACHINE, r"SYSTEM\ControlSet001\Control\Session Manager\Environment"]
+WINDOWS_ENV_VALUE_REGESTRY_PATH_SYSTEM: tuple[RegistryRootKey, str] = (RegistryRootKey.LOCAL_MACHINE, r"SYSTEM\ControlSet001\Control\Session Manager\Environment")
 """Windows 的环境变量的注册表路径 (系统变量)"""
 
-WINDOWS_ENV_VALUE_REGESTRY_PATH_USER = [RegistryRootKey.CURRENT_USER, "Environment"]
+WINDOWS_ENV_VALUE_REGESTRY_PATH_USER: tuple[RegistryRootKey, str] = (RegistryRootKey.CURRENT_USER, "Environment")
 """Windows 的环境变量的注册表路径 (用户变量)"""
 
 
@@ -46,7 +46,8 @@ def add_path_to_env_path(
         key=key,
         access=RegistryAccess.READ,
     )
-    paths = [p for p in raw_path.split(";") if p.strip()]
+    path_value = raw_path if isinstance(raw_path, str) else ""
+    paths = [p for p in path_value.split(";") if p.strip()]
     if new_path in paths:
         return False
 
@@ -120,7 +121,8 @@ def delete_path_from_env_path(
         key=key,
         access=RegistryAccess.READ,
     )
-    paths = [p for p in raw_path.split(";") if p.strip() and key_path not in p]
+    path_value = raw_path if isinstance(raw_path, str) else ""
+    paths = [p for p in path_value.split(";") if p.strip() and key_path not in p]
     registry_set_value(
         name="Path",
         value=";".join(paths),
@@ -130,6 +132,7 @@ def delete_path_from_env_path(
         access=RegistryAccess.WRITE,
     )
     broadcast_settings_change()
+    return True
 
 
 def delete_val_from_env(

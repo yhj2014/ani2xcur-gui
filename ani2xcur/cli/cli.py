@@ -1,10 +1,11 @@
 """CLI 构建工具"""
 
-import typer
 import click
+import typer
+from typer.core import TyperGroup
 
 
-class AlphabeticalMixedGroup(typer.core.TyperGroup):
+class AlphabeticalMixedGroup(TyperGroup):
     """
     自定义的命令组
     """

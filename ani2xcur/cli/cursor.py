@@ -1,7 +1,6 @@
 """系统鼠标指针管理工具"""
 
 import sys
-import traceback
 from typing import (
     Annotated,
     Any,
@@ -102,8 +101,7 @@ def install_cursor(
                 depth=SMART_FINDER_SEARCH_DEPTH,
             )
             if inf_file is None:
-                logger.error("未找到鼠标指针的 INF 配置文件路径, 该鼠标指针文件无法安装")
-                sys.exit(1)
+                raise FileNotFoundError("未找到鼠标指针的 INF 配置文件路径, 该鼠标指针文件无法安装")
 
             try:
                 install_windows_cursor(
@@ -111,11 +109,10 @@ def install_cursor(
                     cursor_install_path=install_path,
                 )
             except PermissionError as e:
-                traceback.print_exc()
-                logger.error(
-                    "在 Windows 系统上安装鼠标指针时发生错误: '%s'\n请检查是否使用管理员权限运行 Ani2xcur 运行, 或者尝试使用 --install-path 参数指定其他鼠标指针的安装路径", e
-                )
-                sys.exit(1)
+                raise PermissionError(
+                    "在 Windows 系统上安装鼠标指针时发生错误: "
+                    f"{e}\n请检查是否使用管理员权限运行 Ani2xcur 运行, 或者尝试使用 --install-path 参数指定其他鼠标指针的安装路径"
+                ) from e
     elif sys.platform == "linux":
         if install_path is None:
             install_path = LINUX_USER_ICONS_PATH
@@ -133,12 +130,10 @@ def install_cursor(
             )
 
             if desktop_entry_file is None:
-                logger.error("未找到鼠标指针的 DesktopEntry 配置文件路径")
-                sys.exit(1)
+                raise FileNotFoundError("未找到鼠标指针的 DesktopEntry 配置文件路径")
 
             if not (desktop_entry_file.parent / "cursors").is_dir():
-                logger.error("鼠标指针目录缺失, 无法进行鼠标指针转换")
-                sys.exit(1)
+                raise FileNotFoundError("鼠标指针目录缺失, 无法进行鼠标指针转换")
 
             try:
                 install_linux_cursor(
@@ -146,15 +141,12 @@ def install_cursor(
                     cursor_install_path=install_path,
                 )
             except (FileNotFoundError, RuntimeError) as e:
-                traceback.print_exc()
-                logger.error(
-                    "在 Windows 系统上安装鼠标指针时发生错误: %s\n请检查是否使用管理员权限运行 Ani2xcur 运行, 或者尝试使用 --install-path 参数指定其他鼠标指针的安装路径\n鼠标指针文件可能也出现损坏, 也请检查鼠标指针文件的完整性",
-                    e,
-                )
-                sys.exit(1)
+                raise RuntimeError(
+                    "在 Linux 系统上安装鼠标指针时发生错误: "
+                    f"{e}\n请检查是否有权限写入安装路径, 或者尝试使用 --install-path 参数指定其他鼠标指针的安装路径\n鼠标指针文件可能也出现损坏, 也请检查鼠标指针文件的完整性"
+                ) from e
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")
 
 
 def uninstall_cursor(
@@ -181,13 +173,9 @@ def uninstall_cursor(
         try:
             delete_windows_cursor(cursor_name)
         except RuntimeError as e:
-            traceback.print_exc()
-            logger.error("删除鼠标指针时发生错误: %s\n可能为没有权限进行删除鼠标指针文件, 可尝试使用管理员权限运行 Ani2xcur", e)
-            sys.exit(1)
+            raise RuntimeError(f"删除鼠标指针时发生错误: {e}\n可能为没有权限进行删除鼠标指针文件, 可尝试使用管理员权限运行 Ani2xcur") from e
         except ValueError as e:
-            traceback.print_exc()
-            logger.error("删除鼠标指针时发生错误: %s\n请检查要删除的鼠标指针是否存在或者正在使用", e)
-            sys.exit(1)
+            raise ValueError(f"删除鼠标指针时发生错误: {e}\n请检查要删除的鼠标指针是否存在或者正在使用") from e
     elif sys.platform == "linux":
         if not force:
             typer.confirm(f"确认删除 {cursor_name} 鼠标指针吗?", abort=True)
@@ -195,16 +183,11 @@ def uninstall_cursor(
         try:
             delete_linux_cursor(cursor_name)
         except RuntimeError as e:
-            traceback.print_exc()
-            logger.error("删除鼠标指针时发生错误: %s\n可能为没有权限进行删除鼠标指针文件, 可尝试使用 root 权限运行 Ani2xcur", e)
-            sys.exit(1)
+            raise RuntimeError(f"删除鼠标指针时发生错误: {e}\n可能为没有权限进行删除鼠标指针文件, 可尝试使用 root 权限运行 Ani2xcur") from e
         except ValueError as e:
-            traceback.print_exc()
-            logger.error("删除鼠标指针时发生错误: %s\n请检查要删除的鼠标指针是否存在", e)
-            sys.exit(1)
+            raise ValueError(f"删除鼠标指针时发生错误: {e}\n请检查要删除的鼠标指针是否存在") from e
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")
 
 
 def export_cursor(
@@ -260,9 +243,7 @@ def export_cursor(
                 )
                 logger.info("Windows 鼠标指针打包完成, 保存路径: '%s'", archive_path)
         except ValueError as e:
-            traceback.print_exc()
-            logger.error("导出鼠标指针发生错误: %s\n请检查导出的鼠标指针是否存在于系统中", e)
-            sys.exit(1)
+            raise ValueError(f"导出鼠标指针发生错误: {e}\n请检查导出的鼠标指针是否存在于系统中") from e
     elif sys.platform == "linux":
         try:
             path = export_linux_cursor(
@@ -280,16 +261,11 @@ def export_cursor(
                 )
                 logger.info("Linux 鼠标指针打包完成, 保存路径: '%s'", archive_path)
         except ValueError as e:
-            traceback.print_exc()
-            logger.error("导出鼠标指针发生错误: %s\n请检查导出的鼠标指针是否存在于系统中", e)
-            sys.exit(1)
+            raise ValueError(f"导出鼠标指针发生错误: {e}\n请检查导出的鼠标指针是否存在于系统中") from e
         except RuntimeError as e:
-            traceback.print_exc()
-            logger.error("导出鼠标指针发生错误: %s\n可能为导出路径无权限读写, 可尝试修改导出路径进行尝试, 或者使用 root 权限运行 Ani2xcur", e)
-            sys.exit(1)
+            raise RuntimeError(f"导出鼠标指针发生错误: {e}\n可能为导出路径无权限读写, 可尝试修改导出路径进行尝试, 或者使用 root 权限运行 Ani2xcur") from e
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")
 
 
 def set_cursor_theme(
@@ -305,19 +281,14 @@ def set_cursor_theme(
         try:
             set_windows_cursor_theme(cursor_name)
         except ValueError as e:
-            traceback.print_exc()
-            logger.error("设置鼠标指针主题时发生错误: %s\n请检查要设置的鼠标指针主题是否安装到系统中", e)
-            sys.exit(1)
+            raise ValueError(f"设置鼠标指针主题时发生错误: {e}\n请检查要设置的鼠标指针主题是否安装到系统中") from e
     elif sys.platform == "linux":
         try:
             set_linux_cursor_theme(cursor_name)
         except ValueError as e:
-            traceback.print_exc()
-            logger.error("设置鼠标指针主题时发生错误: %s\n请检查要设置的鼠标指针主题是否安装到系统中", e)
-            sys.exit(1)
+            raise ValueError(f"设置鼠标指针主题时发生错误: {e}\n请检查要设置的鼠标指针主题是否安装到系统中") from e
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")
 
 
 def set_cursor_size(
@@ -333,34 +304,25 @@ def set_cursor_size(
         try:
             set_windows_cursor_size(cursor_size)
         except TypeError as e:
-            traceback.print_exc()
-            logger.error("设置鼠标指针大小时发生错误: %s\n请检查鼠标指针大小的是否为整数", e)
-            sys.exit(1)
+            raise TypeError(f"设置鼠标指针大小时发生错误: {e}\n请检查鼠标指针大小的是否为整数") from e
         except ValueError as e:
-            traceback.print_exc()
-            logger.error("设置鼠标指针大小时发生错误: %s\n请检查鼠标指针大小的值是否在合法范围", e)
-            sys.exit(1)
+            raise ValueError(f"设置鼠标指针大小时发生错误: {e}\n请检查鼠标指针大小的值是否在合法范围") from e
     elif sys.platform == "linux":
         try:
             set_linux_cursor_size(cursor_size)
         except TypeError as e:
-            traceback.print_exc()
-            logger.error("设置鼠标指针大小时发生错误: %s\n请检查鼠标指针大小的是否为整数", e)
-            sys.exit(1)
+            raise TypeError(f"设置鼠标指针大小时发生错误: {e}\n请检查鼠标指针大小的是否为整数") from e
         except ValueError as e:
-            traceback.print_exc()
-            logger.error("设置鼠标指针大小时发生错误: %s\n请检查鼠标指针大小的值是否在合法范围", e)
-            sys.exit(1)
+            raise ValueError(f"设置鼠标指针大小时发生错误: {e}\n请检查鼠标指针大小的值是否在合法范围") from e
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")
 
 
 def list_cursor() -> None:
     """列出当前系统中已安装的鼠标指针"""
 
     def _display_frame(
-        items: list[dict[str, Any]],
+        items: list[Any],
     ) -> None:
         console = Console()
 
@@ -392,8 +354,7 @@ def list_cursor() -> None:
         logger.info("获取 Linux 系统中已安装的鼠标指针列表")
         cursors = list_linux_cursors()
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")
 
     _display_frame(cursors)
 
@@ -402,7 +363,7 @@ def get_current_cursor() -> None:
     """显示当前系统中设置的鼠标指针名称和大小"""
 
     def _display_frame(
-        items: list[dict[str, Any]],
+        items: list[Any],
     ) -> None:
         console = Console()
 
@@ -433,7 +394,6 @@ def get_current_cursor() -> None:
     elif sys.platform == "linux":
         info = get_linux_cursor_info()
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")
 
     _display_frame(info)

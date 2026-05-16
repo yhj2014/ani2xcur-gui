@@ -131,9 +131,12 @@ def extract_scheme_info_from_desktop_entry(
     Raises:
         FileNotFoundError: 鼠标指针文件缺失时
     """
-    scheme_info: InstallLinuxSchemeInfo = {}
     desktop_entry_content = parse_desktop_entry_content(desktop_entry_file)
-    scheme_name = desktop_entry_content["Icon Theme"]["Name"]
+    theme_info = desktop_entry_content["Icon Theme"]
+    scheme_name_value = theme_info.get("Name")
+    if not isinstance(scheme_name_value, str):
+        raise ValueError("Icon Theme 中缺少合法的 Name 字段")
+    scheme_name = scheme_name_value
     cursor_path = desktop_entry_file.parent / "cursors"
     if not cursor_path.is_dir():
         raise FileNotFoundError(f"未找到 {cursor_path} 目录, 无法搜索已有的鼠标指针文件")
@@ -144,7 +147,7 @@ def extract_scheme_info_from_desktop_entry(
     )
     cursor_key_paths = {x.name: x for x in cursor_paths}
     cursor_map: CursorMap = {}
-    vars_dict = desktop_entry_content["Icon Theme"]
+    vars_dict = {key: value if isinstance(value, str) else ",".join(value) for key, value in theme_info.items()}
     for win, linux in zip(CURSOR_KEYS["win"], CURSOR_KEYS["linux"]):
         if linux in cursor_key_paths:
             src = dst = cursor_key_paths[linux]
@@ -155,11 +158,12 @@ def extract_scheme_info_from_desktop_entry(
             "dst_path": dst,
         }
 
-    scheme_info["scheme_name"] = scheme_name
-    scheme_info["cursor_paths"] = cursor_paths
-    scheme_info["vars_dict"] = vars_dict
-    scheme_info["cursor_map"] = cursor_map
-    return scheme_info
+    return {
+        "scheme_name": scheme_name,
+        "cursor_paths": cursor_paths,
+        "vars_dict": vars_dict,
+        "cursor_map": cursor_map,
+    }
 
 
 def list_linux_cursors() -> CursorSchemesList:
@@ -182,11 +186,13 @@ def list_linux_cursors() -> CursorSchemesList:
 
         logger.debug("获取 '%s' 鼠标指针的文件列表", path)
         cursor_files = get_file_list(cursors_dir)
-        cursors: LocalCursor = {}
-        cursors["name"] = path.name
-        cursors["cursor_files"] = cursor_files
-        cursors["install_paths"] = [path]
-        cursors_list.append(cursors)
+        cursors_list.append(
+            {
+                "name": path.name,
+                "cursor_files": cursor_files,
+                "install_paths": [path],
+            }
+        )
 
     return cursors_list
 
@@ -255,6 +261,18 @@ def set_linux_cursor_size(
     logger.info("鼠标指针大小已设置为 %s", cursor_size)
 
 
+def _cursor_info(
+    platform: str,
+    cursor_name: str | None,
+    cursor_size: int | None,
+) -> CurrentCursorInfo:
+    return {
+        "platform": platform,
+        "cursor_name": cursor_name,
+        "cursor_size": cursor_size,
+    }
+
+
 def get_linux_cursor_info() -> CurrentCursorInfoList:
     """获取 Linux 当前鼠标指针信息
 
@@ -262,91 +280,28 @@ def get_linux_cursor_info() -> CurrentCursorInfoList:
         CurrentCursorInfoList: 桌面平台的当前鼠标指针信息列表
     """
     logger.info("获取 Linux 系统的鼠标指针状态")
-    info_list: CurrentCursorInfoList = []
+    info_list: CurrentCursorInfoList = [
+        _cursor_info("Cinnamon", get_cinnamon_cursor_theme(), get_cinnamon_cursor_size()),
+        _cursor_info("Gnome", get_gnome_cursor_theme(), get_gnome_cursor_size()),
+        _cursor_info("GTK 2.0", get_gtk2_cursor_theme(), get_gtk2_cursor_size()),
+        _cursor_info("GTK 3.0", get_gtk3_cursor_theme(), get_gtk3_cursor_size()),
+        _cursor_info("GTK 4.0", get_gtk4_cursor_theme(), get_gtk4_cursor_size()),
+        _cursor_info("KDE", get_kde_cursor_theme(), get_kde_cursor_size()),
+        _cursor_info("LXQT", get_lxqt_cursor_theme(), get_lxqt_cursor_size()),
+        _cursor_info("Mate", get_mate_cursor_theme(), get_mate_cursor_size()),
+        _cursor_info("X.Org", get_x_resources_cursor_theme(), get_x_resources_cursor_size()),
+    ]
 
-    # Cinnamon
-    cinnamon: CurrentCursorInfo = {}
-    cinnamon["platform"] = "Cinnamon"
-    cinnamon["cursor_name"] = get_cinnamon_cursor_theme()
-    cinnamon["cursor_size"] = get_cinnamon_cursor_size()
-    info_list.append(cinnamon)
+    xdg_theme = get_xdg_cursor_theme()
+    xdg_cursor_name = ",".join(value for value in xdg_theme if value is not None) if xdg_theme is not None else None
+    info_list.append(_cursor_info("XDG", xdg_cursor_name, None))
 
-    # Gnome
-    gnome: CurrentCursorInfo = {}
-    gnome["platform"] = "Gnome"
-    gnome["cursor_name"] = get_gnome_cursor_theme()
-    gnome["cursor_size"] = get_gnome_cursor_size()
-    info_list.append(gnome)
-
-    # GTK 2.0
-    gtk2: CurrentCursorInfo = {}
-    gtk2["platform"] = "GTK 2.0"
-    gtk2["cursor_name"] = get_gtk2_cursor_theme()
-    gtk2["cursor_size"] = get_gtk2_cursor_size()
-    info_list.append(gtk2)
-
-    # GTK 3.0
-    gtk3: CurrentCursorInfo = {}
-    gtk3["platform"] = "GTK 3.0"
-    gtk3["cursor_name"] = get_gtk3_cursor_theme()
-    gtk3["cursor_size"] = get_gtk3_cursor_size()
-    info_list.append(gtk3)
-
-    # GTK 4.0
-    gtk4: CurrentCursorInfo = {}
-    gtk4["platform"] = "GTK 4.0"
-    gtk4["cursor_name"] = get_gtk4_cursor_theme()
-    gtk4["cursor_size"] = get_gtk4_cursor_size()
-    info_list.append(gtk4)
-
-    # KDE
-    kde: CurrentCursorInfo = {}
-    kde["platform"] = "KDE"
-    kde["cursor_name"] = get_kde_cursor_theme()
-    kde["cursor_size"] = get_kde_cursor_size()
-    info_list.append(kde)
-
-    # LXQT
-    lxqt: CurrentCursorInfo = {}
-    lxqt["platform"] = "LXQT"
-    lxqt["cursor_name"] = get_lxqt_cursor_theme()
-    lxqt["cursor_size"] = get_lxqt_cursor_size()
-    info_list.append(lxqt)
-
-    # Mate
-    mate: CurrentCursorInfo = {}
-    mate["platform"] = "Mate"
-    mate["cursor_name"] = get_mate_cursor_theme()
-    mate["cursor_size"] = get_mate_cursor_size()
-    info_list.append(mate)
-
-    # X.Org
-    x_org: CurrentCursorInfo = {}
-    x_org["platform"] = "X.Org"
-    x_org["cursor_name"] = get_x_resources_cursor_theme()
-    x_org["cursor_size"] = get_x_resources_cursor_size()
-    info_list.append(x_org)
-
-    # XDG
-    xdg: CurrentCursorInfo = {}
-    xdg["platform"] = "XDG"
-    xdg["cursor_name"] = ",".join([str(x) for x in get_xdg_cursor_theme()])
-    xdg["cursor_size"] = None
-    info_list.append(xdg)
-
-    # Xfce
-    xfce: CurrentCursorInfo = {}
-    xfce["platform"] = "Xfce"
-    xfce["cursor_name"] = get_xfce_cursor_theme()
-    xfce["cursor_size"] = get_xfce_cursor_size()
-    info_list.append(xfce)
-
-    # X Settings
-    xfce: CurrentCursorInfo = {}
-    xfce["platform"] = "X Settings"
-    xfce["cursor_name"] = get_gtk_xsettings_cursor_theme()
-    xfce["cursor_size"] = get_gtk_xsettings_cursor_size()
-    info_list.append(xfce)
+    info_list.extend(
+        [
+            _cursor_info("Xfce", get_xfce_cursor_theme(), get_xfce_cursor_size()),
+            _cursor_info("X Settings", get_gtk_xsettings_cursor_theme(), get_gtk_xsettings_cursor_size()),
+        ]
+    )
 
     return info_list
 

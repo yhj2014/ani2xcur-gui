@@ -4,16 +4,19 @@ import ctypes
 import os
 import re
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
+win32gui: Any
+win32con: Any
+win32com_client: Any
 try:
-    import win32gui
-    import win32con
-    import win32com.client
+    import win32gui as win32gui  # ty: ignore[unresolved-import]
+    import win32con as win32con  # ty: ignore[unresolved-import]
+    import win32com.client as win32com_client  # ty: ignore[unresolved-import]
 except ImportError:
-    win32gui = NotImplemented
-    win32con = NotImplemented
-    win32com = NotImplemented  # pylint: disable=invalid-name
+    win32gui = None
+    win32con = None
+    win32com_client = None
 
 from ani2xcur.manager.regedit import (
     registry_query_value,
@@ -80,7 +83,7 @@ def has_var_string(
 
 def expand_var_string(
     text: str,
-    vars_dict: dict[str, str] = None,
+    vars_dict: dict[str, str] | None = None,
 ) -> str:
     """将字符串中的 %var% 变量进行替换, 并优先查找变量表中的值
 
@@ -91,21 +94,26 @@ def expand_var_string(
         str: 处理后的字符串
     """
 
+    effective_vars = lowercase_dict_keys(vars_dict or {})
+
     def _replace_env_var(
         match: re.Match,
     ) -> str:
         env_var = match.group(1)
         env_var_lower = match.group(1).lower().strip()
-        return vars_dict.get(env_var_lower, os.environ.get(env_var, match.group(0)))
-
-    if vars_dict is None:
-        vars_dict = {}
+        return effective_vars.get(env_var_lower, os.environ.get(env_var, match.group(0)))
 
     pattern = r"%([^%]+)%"
     text = text.replace(r"%10%", r"%SYSTEMROOT%")
-    vars_dict = lowercase_dict_keys(vars_dict)
     result = re.sub(pattern, _replace_env_var, text)
     return result
+
+
+def _ctypes_windll() -> Any:
+    windll = getattr(ctypes, "windll", None)
+    if windll is None:
+        raise NotImplementedError("Windows system parameter APIs are only available on Windows")
+    return windll
 
 
 def system_parameters_info(
@@ -128,7 +136,7 @@ def system_parameters_info(
     参考资料:
         https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow
     """
-    return bool(ctypes.windll.user32.SystemParametersInfoW(action, ui_param, pv_param, flags))
+    return bool(_ctypes_windll().user32.SystemParametersInfoW(action, ui_param, pv_param, flags))
 
 
 def refresh_system_params(
@@ -152,18 +160,19 @@ def refresh_system_params(
             system_parameters_info(SPI_SETCURSORS, 0, 0, 0)
 
 
-def get_windows_cursor_theme() -> str:
+def get_windows_cursor_theme() -> str | None:
     """获取 Windows 桌面当前使用的鼠标指针配置名称
 
     Returns:
         (str | None): 当前使用的鼠标指针名称
     """
-    return registry_query_value(
+    cursor_theme = registry_query_value(
         name="",
         sub_key=WINDOWS_CURSOR_CURSORS_PATH,
         key=RegistryRootKey.CURRENT_USER,
         access=RegistryAccess.READ,
     )
+    return cursor_theme if isinstance(cursor_theme, str) else None
 
 
 def get_windows_cursor_size() -> int | None:
@@ -178,7 +187,7 @@ def get_windows_cursor_size() -> int | None:
         key=RegistryRootKey.CURRENT_USER,
         access=RegistryAccess.READ,
     )
-    if cursor_size is not None:
+    if isinstance(cursor_size, int):
         return cursor_size
 
     cursor_base_size = registry_query_value(
@@ -187,7 +196,7 @@ def get_windows_cursor_size() -> int | None:
         key=RegistryRootKey.CURRENT_USER,
         access=RegistryAccess.READ,
     )
-    if cursor_base_size is None:
+    if not isinstance(cursor_base_size, int):
         return None
     return convert_windows_cursor_base_size_to_size(cursor_base_size)
 
@@ -210,6 +219,8 @@ def set_windows_cursor_theme(
         return
 
     scheme_data = schemes[cursor_name]
+    if not isinstance(scheme_data, str):
+        return
     cursor_paths = [x for x in extend_list_to_length(scheme_data.split(","), target_length=len(CURSOR_KEYS["win"]))]
 
     # 设置方案名称
@@ -283,6 +294,9 @@ def broadcast_settings_change(
     # HWND_BROADCAST: 0xFFFF (发送给所有顶层窗口)
     # SMTO_ABORTIFHUNG: 如果目标窗口挂起，则立即返回
 
+    if win32gui is None or win32con is None:
+        raise ImportError("pywin32 is required to broadcast Windows settings changes")
+
     result = win32gui.SendMessageTimeout(  # pylint: disable=c-extension-no-member,no-member
         win32con.HWND_BROADCAST,
         win32con.WM_SETTINGCHANGE,
@@ -291,7 +305,7 @@ def broadcast_settings_change(
         win32con.SMTO_ABORTIFHUNG,
         5000,  # 等待每个窗口响应的最大毫秒数
     )
-    return result
+    return bool(result)
 
 
 def create_windows_shortcut(
@@ -310,10 +324,13 @@ def create_windows_shortcut(
         working_dir (Path | None): 工作目录
         icon_path (Path | None): 图标路径
     """
-    shell = win32com.client.Dispatch("WScript.Shell")
+    if win32com_client is None:
+        raise ImportError("pywin32 is required to create Windows shortcuts")
+
+    shell = win32com_client.Dispatch("WScript.Shell")
     shortcut = shell.CreateShortCut(str(shortcut_path))
     shortcut.Targetpath = str(target_path)
-    shortcut.WorkingDirectory = str(working_dir) or str(target_path.parent)
+    shortcut.WorkingDirectory = str(working_dir if working_dir is not None else target_path.parent)
     if description:
         shortcut.Description = description
     if icon_path is not None:

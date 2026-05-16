@@ -129,7 +129,7 @@ class KnownCursorMap(TypedDict, total=False):
     """个人选择 (Person <-> right_ptr)"""
 
 
-CursorMap: TypeAlias = dict[str, CursorFilePair] | KnownCursorMap
+CursorMap: TypeAlias = dict[str, CursorFilePair]
 """鼠标指针类型与对应的路径地图"""
 
 
@@ -417,10 +417,10 @@ class CurrentCursorInfo(TypedDict):
     platform: str
     """桌面平台"""
 
-    cursor_name: str
+    cursor_name: str | None
     """鼠标指针名称"""
 
-    cursor_size: int
+    cursor_size: int | None
     """鼠标指针大小"""
 
 

@@ -76,7 +76,8 @@ def get_gtk_xsettings_cursor_theme() -> str | None:
         return None
 
     config = read_gtk_xsettings_config(GTK_XSETTINGS_PATH)
-    return config.get("Gtk/CursorThemeName")
+    theme = config.get("Gtk/CursorThemeName")
+    return theme if isinstance(theme, str) else None
 
 
 def get_gtk_xsettings_cursor_size() -> int | None:
@@ -89,8 +90,8 @@ def get_gtk_xsettings_cursor_size() -> int | None:
         return None
 
     config = read_gtk_xsettings_config(GTK_XSETTINGS_PATH)
-    size = config.get("Gtk/CursorThemeSize")
-    return safe_convert_to_int(size)
+    size = safe_convert_to_int(config.get("Gtk/CursorThemeSize"))
+    return size if isinstance(size, int) else None
 
 
 def set_gtk_xsettings_cursor_theme(

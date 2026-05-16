@@ -78,6 +78,17 @@ class InstallWindowsSchemeInfo(TypedDict):
     """鼠标指针类型与对应的路径地图"""
 
 
+class WindowsCursorSchemeConfig(TypedDict):
+    """Windows 鼠标指针导出配置"""
+
+    cursor_src_file: list[Path]
+    destination_dirs: str
+    wreg: str
+    scheme_reg: str
+    scheme_cur: str
+    strings: str
+
+
 def extract_scheme_info_from_inf(
     inf_file: Path,
 ) -> InstallWindowsSchemeInfo:
@@ -96,7 +107,6 @@ def extract_scheme_info_from_inf(
     ) -> Path:
         return Path(expand_var_string(x.replace('"', "").replace("'", ""), vars_dict))
 
-    scheme_info: InstallWindowsSchemeInfo = {}
     cursor_map: CursorMap = {}
     inf_file_content = parse_inf_file_content(inf_file)
     scheme_reg = parse_scheme_reg_string(inf_file_content["Scheme.Reg"][0])
@@ -158,14 +168,14 @@ def extract_scheme_info_from_inf(
     # 鼠标指针原文件列表
     cursor_paths = [inf_file.parent / x for x in cursor_files if (inf_file.parent / x).is_file()]
 
-    # 生成字典
-    scheme_info["scheme_name"] = scheme_name
-    scheme_info["cursor_paths"] = cursor_paths
-    scheme_info["default_reg"] = default_reg
-    scheme_info["vars_dict"] = vars_dict
-    scheme_info["default_dst_cursor_paths"] = default_dst_cursor_paths
-    scheme_info["cursor_map"] = cursor_map
-    return scheme_info
+    return {
+        "scheme_name": scheme_name,
+        "cursor_paths": cursor_paths,
+        "default_reg": default_reg,
+        "vars_dict": vars_dict,
+        "default_dst_cursor_paths": default_dst_cursor_paths,
+        "cursor_map": cursor_map,
+    }
 
 
 def parse_scheme_reg_string(
@@ -259,13 +269,17 @@ def list_windows_cursors() -> CursorSchemesList:
     )
     cursors_list: CursorSchemesList = []
     for name, data in schemes.items():
+        if not isinstance(data, str):
+            continue
         cursor_files = [Path(expand_var_string(x)) for x in data.split(",") if x.strip() != "" and Path(expand_var_string(x)).is_file()]
         install_paths = list({x.parent for x in cursor_files})
-        cursors: LocalCursor = {}
-        cursors["name"] = name
-        cursors["cursor_files"] = cursor_files
-        cursors["install_paths"] = install_paths
-        cursors_list.append(cursors)
+        cursors_list.append(
+            {
+                "name": name,
+                "cursor_files": cursor_files,
+                "install_paths": install_paths,
+            }
+        )
 
     return cursors_list
 
@@ -319,13 +333,13 @@ def get_windows_cursor_info() -> CurrentCursorInfoList:
         CurrentCursorInfoList: 桌面平台的当前鼠标指针信息列表
     """
     logger.info("获取 Windows 系统的鼠标指针状态")
-    info: CurrentCursorInfo = {}
-    info_list: CurrentCursorInfoList = []
-    info["platform"] = "Windows"
-    info["cursor_name"] = get_windows_cursor_theme()
-    info["cursor_size"] = get_windows_cursor_size()
-    info_list.append(info)
-    return info_list
+    return [
+        {
+            "platform": "Windows",
+            "cursor_name": get_windows_cursor_theme(),
+            "cursor_size": get_windows_cursor_size(),
+        }
+    ]
 
 
 def delete_windows_cursor(
@@ -438,8 +452,9 @@ def install_windows_cursor(
         install_path = cursor_install_path
         for _, cursor_pair in scheme_info["cursor_map"].items():
             src = cursor_pair["src_path"]
-            if src is not None:
-                dst = cursor_install_path / cursor_name / cursor_pair["dst_path"].name
+            dst_path = cursor_pair["dst_path"]
+            if src is not None and dst_path is not None:
+                dst = cursor_install_path / cursor_name / dst_path.name
                 cursor_paths_in_reg.append(str(dst))
                 copy_paths.append((src, dst))
             else:
@@ -450,10 +465,10 @@ def install_windows_cursor(
     else:
         for _, cursor_pair in scheme_info["cursor_map"].items():
             src = cursor_pair["src_path"]
-            if src is not None:
-                install_path = cursor_pair["dst_path"].parent
-                dst = cursor_pair["dst_path"]
-                copy_paths.append((src, dst))
+            dst_path = cursor_pair["dst_path"]
+            if src is not None and dst_path is not None:
+                install_path = dst_path.parent
+                copy_paths.append((src, dst_path))
 
         # 生成需要写入注册表的方案对应值, 使用原始值
         reg_scheme_value = parse_scheme_reg_string(scheme_info["default_reg"])[4]
@@ -601,7 +616,7 @@ Scheme.Cur = {{DESTINATION_DIRS}}
 def generate_cursor_scheme_config(
     cursor_name: str,
     custom_install_path: Path | None = None,
-) -> dict[str, str]:
+) -> WindowsCursorSchemeConfig:
     """生成鼠标指针的配置, 配置字典字段:
     - `cursor_src_file`: 鼠标指针文件路径列表, 用于导出文件
     - `destination_dirs`: [DestinationDirs] 字段, 用于声明 Windows 读取 INF 文件时获取需要复制鼠标指针到的路径
@@ -614,9 +629,8 @@ def generate_cursor_scheme_config(
         cursor_name (str): 要导出的鼠标指针方案的名称
         custom_install_path (Path | None): 自定义鼠标指针安装文件
     Returns:
-        (dict[str, str]): 鼠标指针的配置字典
+        WindowsCursorSchemeConfig: 鼠标指针的配置字典
     """
-    config_dict: dict[str, str] = {}
 
     # 查找鼠标指针对应的方案信息
     cursor_paths_in_reg = registry_query_value(
@@ -625,6 +639,9 @@ def generate_cursor_scheme_config(
         key=RegistryRootKey.CURRENT_USER,
         access=RegistryAccess.READ,
     )
+
+    if not isinstance(cursor_paths_in_reg, str):
+        raise ValueError(f"鼠标指针 {cursor_name} 不存在或注册表数据格式不正确")
 
     cursor_paths: list[Path] = []  # 用于导出的路径列表
     paths_to_reg: list[str] = []  # [Scheme.Reg] 部分
@@ -649,7 +666,7 @@ def generate_cursor_scheme_config(
             path_in_reg = rf"%10%\%CUR_DIR%\%{key}%"
 
         paths_to_reg.append(path_in_reg)
-        if path_in_reg != "":
+        if path_in_reg != "" and path is not None:
             strings[key] = path.name
             wreg_list.append(rf'HKCU,"Control Panel\Cursors",{key},0x00020000,"{path_in_reg}"')
 
@@ -676,12 +693,11 @@ def generate_cursor_scheme_config(
     # 配置 [Scheme.Cur] 字段
     scheme_cur = "\n".join([f'"{x.name}"' for x in cursor_paths])
 
-    # 打包参数
-    config_dict["cursor_src_file"] = cursor_paths
-    config_dict["destination_dirs"] = destination_dirs
-    config_dict["wreg"] = wreg
-    config_dict["scheme_reg"] = scheme_reg
-    config_dict["scheme_cur"] = scheme_cur
-    config_dict["strings"] = dict_to_inf_strings_format(strings)
-
-    return config_dict
+    return {
+        "cursor_src_file": cursor_paths,
+        "destination_dirs": destination_dirs,
+        "wreg": wreg,
+        "scheme_reg": scheme_reg,
+        "scheme_cur": scheme_cur,
+        "strings": dict_to_inf_strings_format(strings),
+    }

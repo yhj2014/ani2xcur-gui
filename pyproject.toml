@@ -36,6 +36,7 @@ dependencies = [
     "requests",
     "tqdm",
     "rich",
+    "pywin32; sys_platform == 'win32'",
 ]
 
 [project.scripts]

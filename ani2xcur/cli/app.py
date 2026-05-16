@@ -1,8 +1,17 @@
 """入口文件"""
 
+import sys
+
 import typer
+from click.exceptions import Abort, ClickException, Exit
 
 from ani2xcur.cli.cli import typer_factory
+from ani2xcur.config import (
+    LOGGER_NAME,
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
+from ani2xcur.logger import get_logger
 from ani2xcur.cli.system import (
     version,
     update,
@@ -24,6 +33,13 @@ from ani2xcur.cli.cursor import (
 from ani2xcur.cli.image_magick import (
     install_image_magick,
     uninstall_image_magick,
+)
+
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
 )
 
 
@@ -67,4 +83,16 @@ def get_app() -> typer.Typer:
 
 def main() -> None:
     """主函数"""
-    get_app()()
+    try:
+        get_app()()
+    except Exit as e:
+        sys.exit(e.exit_code)
+    except Abort:
+        logger.error("操作已取消")
+        sys.exit(1)
+    except ClickException as e:
+        e.show()
+        sys.exit(e.exit_code)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("命令执行失败: %s", e)
+        sys.exit(1)

@@ -5,10 +5,11 @@ from enum import (
     IntFlag,
     Enum,
 )
+from typing import Any
 
 
 if sys.platform == "win32":
-    import winreg
+    import winreg as winreg
 
     class RegistryRootKey(IntFlag):
         """注册表根路径"""
@@ -129,7 +130,32 @@ else:
         MULTI_SZ = NotImplemented
         NONE = NotImplemented
 
-    winreg = NotImplemented  # pylint: disable=invalid-name
+    winreg: Any = NotImplemented  # pylint: disable=invalid-name
+
+
+def _require_windows_registry() -> None:
+    if sys.platform != "win32":
+        raise NotImplementedError("Windows registry APIs are only available on Windows")
+
+
+def _root_key(key: RegistryRootKey | None) -> int:
+    _require_windows_registry()
+    root_key = RegistryRootKey.CURRENT_USER if key is None else key
+    value: Any = root_key.value
+    return int(value)
+
+
+def _access(access: RegistryAccess | None) -> int:
+    _require_windows_registry()
+    registry_access = RegistryAccess.READ if access is None else access
+    value: Any = registry_access.value
+    return int(value)
+
+
+def _value_type(reg_type: RegistryValueType) -> int:
+    _require_windows_registry()
+    value: Any = reg_type.value
+    return int(value)
 
 
 def registry_query_value(
@@ -155,7 +181,7 @@ def registry_query_value(
             - `REG_MULTI_SZ` -> `list[str]`
             - 当值不存在时返回 `None`
     """
-    with winreg.OpenKey(key, sub_key, 0, access) as reg:
+    with winreg.OpenKey(_root_key(key), sub_key, 0, _access(access)) as reg:
         try:
             return winreg.QueryValueEx(reg, name)[0]
         except FileNotFoundError:
@@ -188,7 +214,7 @@ def registry_delete_value(
             - `True`: 删除成功
             - `False`: 目标值不存在
     """
-    with winreg.OpenKey(key, sub_key, 0, access) as reg:
+    with winreg.OpenKey(_root_key(key), sub_key, 0, _access(access)) as reg:
         try:
             winreg.DeleteValue(reg, name)
             return True
@@ -220,7 +246,7 @@ def registry_enum_values(
     """
     values: dict[str, str | int | bytes | list[str] | None] = {}
 
-    with winreg.OpenKey(key, sub_key, 0, access) as reg:
+    with winreg.OpenKey(_root_key(key), sub_key, 0, _access(access)) as reg:
         index = 0
         while True:
             try:
@@ -262,8 +288,8 @@ def registry_set_value(
         access (RegistryAccess | None):
             打开注册表键的访问权限
     """
-    with winreg.OpenKey(key, sub_key, 0, access) as reg:
-        winreg.SetValueEx(reg, name, 0, reg_type, value)
+    with winreg.OpenKey(_root_key(key), sub_key, 0, _access(access)) as reg:
+        winreg.SetValueEx(reg, name, 0, _value_type(reg_type), value)
 
 
 def registry_path_exists(
@@ -289,7 +315,7 @@ def registry_path_exists(
             - `False`: 路径不存在
     """
     try:
-        with winreg.OpenKey(key, sub_key, 0, access) as _:
+        with winreg.OpenKey(_root_key(key), sub_key, 0, _access(access)) as _:
             return True
     except FileNotFoundError:
         return False
@@ -312,7 +338,7 @@ def registry_create_path(
         access (RegistryAccess | None):
             打开/创建子键时的访问权限
     """
-    winreg.CreateKeyEx(key, sub_key, 0, access)
+    winreg.CreateKeyEx(_root_key(key), sub_key, 0, _access(access))
 
 
 def registry_delete_path(
@@ -337,7 +363,7 @@ def registry_delete_path(
         RuntimeError: 所选的注册表路径不为空或者不能被删除
     """
     try:
-        winreg.DeleteKey(key, sub_key)
+        winreg.DeleteKey(_root_key(key), sub_key)
         return True
     except FileNotFoundError:
         return False
@@ -365,10 +391,10 @@ def registry_delete_tree(
     """
     try:
         with winreg.OpenKey(
-            key=key,
+            key=_root_key(key),
             sub_key=sub_key,
             reserved=0,
-            access=winreg.KEY_READ | winreg.KEY_WRITE,
+            access=_access(RegistryAccess.READ) | _access(RegistryAccess.WRITE),
         ) as reg:
             while True:
                 try:
@@ -376,7 +402,7 @@ def registry_delete_tree(
                     registry_delete_tree(f"{sub_key}\\{child}", key)
                 except OSError:
                     break
-        winreg.DeleteKey(key, sub_key)
+        winreg.DeleteKey(_root_key(key), sub_key)
         return True
     except FileNotFoundError:
         return False

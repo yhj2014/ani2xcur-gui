@@ -140,8 +140,7 @@ def win2xcur(
 ) -> None:
     """将 Windows 鼠标指针文件包转换为 Linux 鼠标指针文件包"""
     if not check_image_magick_is_installed():
-        logger.error("未安装 ImageMagick, 无法进行鼠标指针转换, 请使用 ani2xcur imagemagick install 命令进行安装")
-        sys.exit(1)
+        raise RuntimeError("未安装 ImageMagick, 无法进行鼠标指针转换, 请使用 ani2xcur imagemagick install 命令进行安装")
 
     logger.info("将 '%s' 的 Windows 鼠标指针主题包转换为 Linux 鼠标指针主题包中", input_path)
 
@@ -173,8 +172,7 @@ def win2xcur(
         )
 
         if inf_file is None:
-            logger.error("未找到鼠标指针的 INF 配置文件路径")
-            sys.exit(1)
+            raise FileNotFoundError("未找到鼠标指针的 INF 配置文件路径")
 
         save_path = win_cursor_to_x11(
             inf_file=inf_file,
@@ -190,6 +188,8 @@ def win2xcur(
                     temp_dir=temp_dir,
                     depth=SMART_FINDER_SEARCH_DEPTH,
                 )
+                if desktop_entry_file is None:
+                    raise FileNotFoundError("未找到鼠标指针的 DesktopEntry 配置文件路径")
                 install_linux_cursor(
                     desktop_entry_file=desktop_entry_file,
                     cursor_install_path=LINUX_USER_ICONS_PATH if install_path is None else install_path,
@@ -257,8 +257,7 @@ def x2wincur(
 ) -> None:
     """将 Linux 鼠标指针文件包转换为 Windows 鼠标指针文件包"""
     if not check_image_magick_is_installed():
-        logger.error("未安装 ImageMagick, 无法进行鼠标指针转换, 请使用 ani2xcur imagemagick install 命令进行安装")
-        sys.exit(1)
+        raise RuntimeError("未安装 ImageMagick, 无法进行鼠标指针转换, 请使用 ani2xcur imagemagick install 命令进行安装")
 
     logger.info("将 '%s' 的 Linux 鼠标指针主题包转换为 Windows 鼠标指针主题包中", input_path)
     x2win_args: X2wincurArgs = {
@@ -282,12 +281,10 @@ def x2wincur(
         )
 
         if desktop_entry_file is None:
-            logger.error("未找到鼠标指针的 DesktopEntry 配置文件路径")
-            sys.exit(1)
+            raise FileNotFoundError("未找到鼠标指针的 DesktopEntry 配置文件路径")
 
         if not (desktop_entry_file.parent / "cursors").is_dir():
-            logger.error("鼠标指针目录缺失, 无法进行鼠标指针转换")
-            sys.exit(1)
+            raise FileNotFoundError("鼠标指针目录缺失, 无法进行鼠标指针转换")
 
         save_path = x11_cursor_to_win(
             desktop_entry_file=desktop_entry_file,
@@ -298,13 +295,15 @@ def x2wincur(
         if install:
             if sys.platform == "win32":
                 logger.info("将 '%s' 鼠标指针安装到 Windows 系统中", save_path)
-                desktop_entry_file = find_inf_file(
+                inf_file = find_inf_file(
                     input_file=save_path,
                     temp_dir=temp_dir,
                     depth=SMART_FINDER_SEARCH_DEPTH,
                 )
+                if inf_file is None:
+                    raise FileNotFoundError("未找到鼠标指针的 INF 配置文件路径")
                 install_windows_cursor(
-                    inf_file=desktop_entry_file,
+                    inf_file=inf_file,
                     cursor_install_path=WINDOWS_USER_CURSOR_PATH if install_path is None else install_path,
                 )
             else:

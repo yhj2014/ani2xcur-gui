@@ -121,11 +121,11 @@ def win2xcur_process(
     if shadow:
         apply_to_frames_for_shadow(
             cursor.frames,
-            color=shadow_color,
-            radius=shadow_radius,
-            sigma=shadow_sigma,
-            xoffset=shadow_x,
-            yoffset=shadow_y,
+            color="#000000" if shadow_color is None else shadow_color,
+            radius=0.1 if shadow_radius is None else shadow_radius,
+            sigma=0.1 if shadow_sigma is None else shadow_sigma,
+            xoffset=0.05 if shadow_x is None else shadow_x,
+            yoffset=0.05 if shadow_y is None else shadow_y,
         )
     result = to_x11(cursor.frames)
     output_path = output_path / save_name
@@ -154,7 +154,7 @@ def x2wincur_process(
     output_path: Path,
     save_name: str | None = None,
     scale: float | None = None,
-) -> None:
+) -> Path:
     """x2wincur 处理过程
 
     Args:

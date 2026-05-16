@@ -4,18 +4,19 @@ import os
 import re
 import getpass
 import ctypes.util
+import importlib
 import itertools
 import platform
 import shutil
-from typing import Generator
+from typing import Any, Generator
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from datetime import datetime
 
 try:
-    import winreg
+    winreg: Any = importlib.import_module("winreg")
 except ImportError:
-    winreg = NotImplemented
+    winreg = None
 
 from ani2xcur.downloader import download_file_from_url
 from ani2xcur.file_operations.archive_manager import extract_archive
@@ -256,7 +257,7 @@ def install_image_magick_windows(
 
 def get_image_magick_version(
     magick_bin: Path,
-) -> tuple[str, str, str]:
+) -> tuple[str | None, str | None, str | None]:
     """获取 ImageMagick 版本号, 质量设置和架构
 
     Args:
@@ -268,6 +269,9 @@ def get_image_magick_version(
         result = run_cmd([magick_bin.as_posix(), "-version"], live=False)
     except RuntimeError as e:
         logger.debug("获取 ImageMagick 版本失败: %s", e)
+        return None, None, None
+
+    if result is None:
         return None, None, None
 
     pattern = r"ImageMagick\s+([0-9.-]+)\s+([A-Z0-9-]+)\s+([a-zA-Z0-9]+)"
@@ -393,12 +397,14 @@ def find_image_magick_install_path_windows() -> Path | None:
     for name in ["BinPath", "ConfigurePath", "LibPath"]:
         try:
             logger.debug("在 '%s' 查找 ImageMagick 的键: '%s'", IMAGE_MAGICK_WINDOWS_REGISTRY_CONFIG_PATH, name)
-            install_path = registry_query_value(
+            install_path_value = registry_query_value(
                 name=name,
                 sub_key=IMAGE_MAGICK_WINDOWS_REGISTRY_CONFIG_PATH,
                 key=RegistryRootKey.LOCAL_MACHINE,
             )
-            install_path = Path(install_path)
+            if not isinstance(install_path_value, str):
+                continue
+            install_path = Path(install_path_value)
             if not install_path.is_dir():
                 install_path = None
                 continue
@@ -408,13 +414,15 @@ def find_image_magick_install_path_windows() -> Path | None:
     if install_path is None:
         try:
             logger.debug("在 '%s' 查找 ImageMagick 的键: InstallLocation", IMAGE_MAGICK_WINDOWS_REGISTRY_UNINSTALL_CONFIG_PATH)
-            install_path = registry_query_value(
+            install_path_value = registry_query_value(
                 name="InstallLocation",
                 sub_key=IMAGE_MAGICK_WINDOWS_REGISTRY_UNINSTALL_CONFIG_PATH,
                 key=RegistryRootKey.LOCAL_MACHINE,
                 access=RegistryAccess.READ,
             )
-            install_path = Path(install_path)
+            if not isinstance(install_path_value, str):
+                return None
+            install_path = Path(install_path_value)
             if not install_path.is_dir():
                 install_path = None
         except FileNotFoundError:
@@ -563,6 +571,8 @@ def find_wand_library_paths() -> Generator[tuple[str | None, str | None], None, 
         # Windows 版的 ImageMagick 安装程序通常将编解码器和滤镜 DLL 安装在子文件夹中,
         # 我们需要将这些文件夹添加到 PATH 环境变量中, 否则稍后加载 DLL 时会失败.
         try:
+            if winreg is None:
+                raise OSError("winreg is not available")
             # 打开 Windows 注册表中 ImageMagick 的配置项
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\ImageMagick\Current") as reg_key:
                 # 从注册表中查询库路径、编解码器模块路径和滤镜模块路径
@@ -581,7 +591,9 @@ def find_wand_library_paths() -> Generator[tuple[str | None, str | None], None, 
             pass
 
     # 辅助函数: 构建 ImageMagick 路径
-    def magick_path(path):
+    def magick_path(path: tuple[str, ...]) -> str:
+        if magick_home is None:
+            raise RuntimeError("MAGICK_HOME is not configured")
         return os.path.join(magick_home, *path)
 
     # 生成版本和选项的所有组合

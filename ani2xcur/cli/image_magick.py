@@ -1,7 +1,6 @@
 """ImageMagick 管理工具"""
 
 import sys
-import traceback
 from typing import Annotated
 from pathlib import Path
 
@@ -52,8 +51,7 @@ def install_image_magick(
     """安装 ImageMagick 到系统中"""
     if sys.platform == "win32":
         if not is_admin_on_windows():
-            logger.error("当前未使用管理员权限运行 Ani2xcur, 无法安装 ImageMagick, 请使用管理员权限启动 Ani2xcur")
-            sys.exit(1)
+            raise PermissionError("当前未使用管理员权限运行 Ani2xcur, 无法安装 ImageMagick, 请使用管理员权限启动 Ani2xcur")
 
         if install_path is None:
             install_path = IMAGE_MAGICK_WINDOWS_INSTALL_PATH
@@ -66,13 +64,10 @@ def install_image_magick(
         try:
             install_image_magick_windows(install_path=install_path)
         except PermissionError as e:
-            traceback.print_exc()
-            logger.error("安装 ImageMagick 时发生错误: %s\n请检查是否使用管理员权限运行 Ani2xcur", e)
-            sys.exit(1)
+            raise PermissionError(f"安装 ImageMagick 时发生错误: {e}\n请检查是否使用管理员权限运行 Ani2xcur") from e
     elif sys.platform == "linux":
         if not is_root_on_linux():
-            logger.error("当前未使用 root 权限运行 Ani2xcur, 无法安装 ImageMagick, 请使用 root 权限启动 Ani2xcur")
-            sys.exit(1)
+            raise PermissionError("当前未使用 root 权限运行 Ani2xcur, 无法安装 ImageMagick, 请使用 root 权限启动 Ani2xcur")
 
         if not force:
             typer.confirm("确认安装 ImageMagick 吗?", abort=True)
@@ -80,13 +75,10 @@ def install_image_magick(
         try:
             install_image_magick_linux()
         except RuntimeError as e:
-            traceback.print_exc()
-            logger.error("安装 ImageMagick 时发生错误: %s\n当前的 Linux 发行版可能不支持自动安装 ImageMagick, 请尝试手动安装 ImageMagick", e)
-            sys.exit(1)
+            raise RuntimeError(f"安装 ImageMagick 时发生错误: {e}\n当前的 Linux 发行版可能不支持自动安装 ImageMagick, 请尝试手动安装 ImageMagick") from e
 
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")
 
 
 def uninstall_image_magick(
@@ -102,8 +94,7 @@ def uninstall_image_magick(
     """将 ImageMagick 从系统中卸载"""
     if sys.platform == "win32":
         if not is_admin_on_windows():
-            logger.error("当前未使用管理员权限运行 Ani2xcur, 无法卸载 ImageMagick, 请使用管理员权限启动 Ani2xcur")
-            sys.exit(1)
+            raise PermissionError("当前未使用管理员权限运行 Ani2xcur, 无法卸载 ImageMagick, 请使用管理员权限启动 Ani2xcur")
 
         if not force:
             typer.confirm("确认卸载 ImageMagick 吗?", abort=True)
@@ -111,13 +102,10 @@ def uninstall_image_magick(
         try:
             uninstall_image_magick_windows()
         except PermissionError as e:
-            traceback.print_exc()
-            logger.error("安装 ImageMagick 时发生错误: %s\n请检查是否使用管理员权限运行 Ani2xcur", e)
-            sys.exit(1)
+            raise PermissionError(f"卸载 ImageMagick 时发生错误: {e}\n请检查是否使用管理员权限运行 Ani2xcur") from e
     elif sys.platform == "linux":
         if not is_root_on_linux():
-            logger.error("当前未使用 root 权限运行 Ani2xcur, 无法卸载 ImageMagick, 请使用 root 权限启动 Ani2xcur")
-            sys.exit(1)
+            raise PermissionError("当前未使用 root 权限运行 Ani2xcur, 无法卸载 ImageMagick, 请使用 root 权限启动 Ani2xcur")
 
         if not force:
             typer.confirm("确认卸载 ImageMagick 吗?", abort=True)
@@ -125,9 +113,6 @@ def uninstall_image_magick(
         try:
             uninstall_image_magick_linux()
         except RuntimeError as e:
-            traceback.print_exc()
-            logger.error("安装 ImageMagick 时发生错误: %s\n当前的 Linux 发行版可能不支持自动安装 ImageMagick, 请尝试手动安装 ImageMagick", e)
-            sys.exit(1)
+            raise RuntimeError(f"卸载 ImageMagick 时发生错误: {e}\n当前的 Linux 发行版可能不支持自动卸载 ImageMagick, 请尝试手动卸载 ImageMagick") from e
     else:
-        logger.error("不支持的系统: %s", sys.platform)
-        sys.exit(1)
+        raise NotImplementedError(f"不支持的系统: {sys.platform}")

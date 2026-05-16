@@ -61,7 +61,7 @@ def win_cursor_to_x11(
     cursor_map = win_scheme["cursor_map"]
     cursor_name = win_scheme["scheme_name"]
     win2x_path_list: list[tuple[str, Path, Path]] = []
-    completed_cursor_list: list[tuple[str, Path]] = []
+    completed_cursor_list: list[tuple[Path, Path]] = []
     link_file_list: list[tuple[Path, Path]] = []
 
     with TemporaryDirectory() as tmp_dir:
