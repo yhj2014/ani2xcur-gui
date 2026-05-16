@@ -9,7 +9,6 @@ from ani2xcur.manager.base import (
     CurrentCursorInfoList,
     CursorMap,
     CURSOR_KEYS,
-    LocalCursor,
 )
 from ani2xcur.config_parse.linux import parse_desktop_entry_content
 from ani2xcur.file_operations.file_manager import (

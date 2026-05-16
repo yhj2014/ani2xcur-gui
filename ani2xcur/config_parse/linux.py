@@ -6,7 +6,6 @@ from typing import (
     Literal,
     Protocol,
     TypedDict,
-    cast,
 )
 
 from ani2xcur.config_parse.parse import (

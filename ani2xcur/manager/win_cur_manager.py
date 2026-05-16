@@ -18,10 +18,8 @@ from ani2xcur.file_operations.file_manager import (
 from ani2xcur.config_parse.win import dict_to_inf_strings_format
 from ani2xcur.manager.base import (
     CURSOR_KEYS,
-    CurrentCursorInfo,
     CurrentCursorInfoList,
     CursorMap,
-    LocalCursor,
     CursorSchemesList,
 )
 from ani2xcur.manager.desktop_config.base import check_windows_cursor_size_value
