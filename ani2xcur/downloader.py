@@ -29,19 +29,19 @@ def download_file_from_url(
     hash_prefix: str | None = None,
     re_download: bool | None = False,
 ) -> Path:
-    """使用 requrests 库下载文件
-
+    """使用 requests 库下载文件
+    
     Args:
         url (str): 下载链接
         save_path (Path | None): 下载路径
-        file_name (str | None): 保存的文件名, 如果为`None`则从`url`中提取文件
+        file_name (str | None): 保存的文件名, 如果为 None 则从 url 中提取
         progress (bool | None): 是否启用下载进度条
-        hash_prefix (str | None): sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
-        re_download (bool): 强制重新下载文件
+        hash_prefix (str | None): sha256 十六进制前缀, 提供时会校验下载文件
+        re_download (bool | None): 是否强制重新下载文件
     Returns:
-        Path: 下载的文件路径
+        Path: 下载后的文件路径
     Raises:
-        ValueError: 当提供了 hash_prefix 但文件哈希值不匹配时
+        ValueError: 文件哈希值与预期前缀不匹配时
     """
     import requests
 

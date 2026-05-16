@@ -35,7 +35,16 @@ class DesktopEntrySectionDict(Protocol):
         self,
         key: Literal["var", "constant"],
         default: Any = ...,
-    ) -> str | dict[str, str | list[str]] | Any: ...
+    ) -> str | dict[str, str | list[str]] | Any:
+        """获取 DesktopEntry 节中的指定字段。
+
+        Args:
+            key: 要获取的字段名
+            default: 字段不存在时返回的默认值
+        Returns:
+            str | dict[str, str | list[str]] | Any: 字段值或默认值
+        """
+        ...
 
 
 class KnownDesktopEntrySections(Protocol):

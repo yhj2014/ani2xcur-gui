@@ -15,9 +15,11 @@ class AlphabeticalMixedGroup(TyperGroup):
         ctx: click.Context,
     ) -> list[str]:  # type: ignore[name-defined]
         """将命令按键名进行字母排序
-
+        
         Args:
             ctx (click.Context): click 组件上下文
+        Returns:
+            list[str]: 排序后的命令名称列表
         """
         return sorted(self.commands.keys())
 

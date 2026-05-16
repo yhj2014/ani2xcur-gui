@@ -95,8 +95,9 @@ def parse_inf_file(
     path: Path,
 ) -> ParsedINF:
     """解析 INF 文件
+    
     Args:
-        path (str): INF 文件路径
+        path (Path): INF 文件路径
     Returns:
         ParsedINF: INF 文件结构字典
     """

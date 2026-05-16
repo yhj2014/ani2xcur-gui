@@ -52,7 +52,15 @@ def update(
         ),
     ] = None,
 ) -> None:
-    """更新 Ani2xcur"""
+    """更新 Ani2xcur
+    
+    Args:
+        install_from_source: 是否从源码安装更新
+        ani2xcur_source: Ani2xcur 源仓库链接
+        win2xcur_source: Win2xcur 源仓库链接
+    Raises:
+        RuntimeError: 更新失败时
+    """
     try:
         self_update(
             install_from_source=install_from_source,

@@ -433,9 +433,10 @@ def find_image_magick_install_path_windows() -> Path | None:
 
 def install_image_magick_linux() -> None:
     """在 Linux 系统中安装 ImageMagick
-
+    
     Raises:
-        RuntimeError: 当 Linux 不支持自动安装 ImageMagick 时
+        PermissionError: 当前不是 root 权限时
+        RuntimeError: Linux 发行版不支持自动安装 ImageMagick 时
     """
     if check_image_magick_is_installed():
         logger.info("ImageMagick 已安装在 Linux 系统中")
@@ -487,9 +488,10 @@ def install_image_magick_linux() -> None:
 
 def uninstall_image_magick_linux() -> None:
     """在 Linux 系统中卸载 ImageMagick
-
+    
     Raises:
-        RuntimeError: 当 Linux 不支持自动卸载 ImageMagick 时
+        PermissionError: 当前不是 root 权限时
+        RuntimeError: Linux 发行版不支持自动卸载 ImageMagick 时
     """
     if not check_image_magick_is_installed():
         logger.info("ImageMagick 未安装在 Linux 系统中")
@@ -539,14 +541,14 @@ def uninstall_image_magick_linux() -> None:
 
 
 def find_wand_library_paths() -> Generator[tuple[str | None, str | None], None, None]:
-    """迭代尝试加载的库路径对 (Wand 库路径, Core 库路径).
-
-    结果路径是基于启发式搜索生成的, 不一定在磁盘上真实存在.
-
-    调用者通常需要遍历此生成器并尝试用 ctypes.CDLL 加载, 直到成功为止.
-
-    Returns:
-        (Generator[tuple[str | None, str | None], None, None]): 一个生成器, 每次迭代返回 (libwand_path, libmagick_path)
+    """迭代尝试加载的 Wand/Core 库路径对
+    
+    结果路径基于启发式搜索生成, 不一定在磁盘上真实存在。调用者通常需要遍历此生成器并尝试用 ctypes.CDLL 加载, 直到成功为止。
+    
+    Yields:
+        tuple[str | None, str | None]: Wand 库路径和 Core 库路径
+    Raises:
+        OSError: 读取动态库搜索路径失败时
     """
     # 初始化库路径变量
     libwand = None

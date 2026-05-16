@@ -132,16 +132,16 @@ def get_file_list(
     show_progress: bool = True,
     include_dirs: bool = False,
 ) -> list[Path]:
-    """获取当前路径下的所有文件（和可选的目录）的绝对路径
-
+    """获取当前路径下的所有文件和可选目录的绝对路径
+    
     Args:
         path (Path): 要获取列表的目录
-        resolve (bool | None): 将路径进行完全解析, 包括链接路径
-        max_depth (int | None): 最大遍历深度, -1 表示不限制深度, 0 表示只遍历当前目录
-        show_progress (bool | None): 是否显示 tqdm 进度条
-        include_dirs (bool | None): 是否在结果中包含目录路径
+        resolve (bool): 是否完全解析路径, 包括链接路径
+        max_depth (int): 最大遍历深度, -1 表示不限制深度, 0 表示只遍历当前目录
+        show_progress (bool): 是否显示 tqdm 进度条
+        include_dirs (bool): 是否在结果中包含目录路径
     Returns:
-        (list[Path]): 路径列表的绝对路径
+        list[Path]: 路径列表的绝对路径
     """
 
     if not path or not path.exists():

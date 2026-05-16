@@ -81,7 +81,18 @@ def install_cursor(
         ),
     ] = False,
 ) -> None:
-    """将鼠标指针安装到系统中"""
+    """将鼠标指针安装到系统中
+    
+    Args:
+        input_path: 鼠标指针配置文件、光标文件或压缩包路径
+        install_path: 自定义鼠标指针安装路径
+        use_inf_config_path: Windows 平台是否使用 INF 中的安装路径
+    Raises:
+        FileNotFoundError: 未找到鼠标指针配置文件或光标目录时
+        NotImplementedError: 当前平台不支持安装鼠标指针时
+        PermissionError: 当前权限不足时
+        RuntimeError: 安装过程失败时
+    """
     if sys.platform == "win32":
         if install_path is None:
             if use_inf_config_path:
@@ -165,7 +176,16 @@ def uninstall_cursor(
         ),
     ] = False,
 ) -> None:
-    """删除系统中指定的鼠标指针"""
+    """删除系统中指定的鼠标指针
+    
+    Args:
+        cursor_name: 要删除的鼠标指针名称
+        force: 是否跳过确认提示
+    Raises:
+        NotImplementedError: 当前平台不支持删除鼠标指针时
+        RuntimeError: 删除过程失败时
+        ValueError: 鼠标指针不存在或正在使用时
+    """
     if sys.platform == "win32":
         if not force:
             typer.confirm(f"确认删除 {cursor_name} 鼠标指针吗?", abort=True)
@@ -225,7 +245,19 @@ def export_cursor(
         ),
     ] = ".zip",
 ) -> None:
-    """将鼠标指针从系统中导出"""
+    """将鼠标指针从系统中导出
+    
+    Args:
+        cursor_name: 要导出的鼠标指针名称
+        output_path: 导出路径
+        custom_install_path: 导出配置中记录的自定义安装路径
+        compress: 是否在导出后打包
+        compress_format: 压缩包格式
+    Raises:
+        NotImplementedError: 当前平台不支持导出鼠标指针时
+        RuntimeError: 导出过程失败时
+        ValueError: 鼠标指针不存在时
+    """
     if sys.platform == "win32":
         try:
             path = export_windows_cursor(
@@ -276,7 +308,14 @@ def set_cursor_theme(
         ),
     ],
 ) -> None:
-    """设置系统要使用的鼠标指针主题"""
+    """设置系统要使用的鼠标指针主题
+    
+    Args:
+        cursor_name: 要设置的鼠标指针主题名称
+    Raises:
+        NotImplementedError: 当前平台不支持设置鼠标指针主题时
+        ValueError: 鼠标指针主题不存在时
+    """
     if sys.platform == "win32":
         try:
             set_windows_cursor_theme(cursor_name)
@@ -299,7 +338,15 @@ def set_cursor_size(
         ),
     ],
 ) -> None:
-    """设置系统要使用的鼠标指针大小"""
+    """设置系统要使用的鼠标指针大小
+    
+    Args:
+        cursor_size: 要设置的鼠标指针大小
+    Raises:
+        NotImplementedError: 当前平台不支持设置鼠标指针大小时
+        TypeError: 鼠标指针大小不是整数时
+        ValueError: 鼠标指针大小超出合法范围时
+    """
     if sys.platform == "win32":
         try:
             set_windows_cursor_size(cursor_size)
@@ -319,7 +366,11 @@ def set_cursor_size(
 
 
 def list_cursor() -> None:
-    """列出当前系统中已安装的鼠标指针"""
+    """列出当前系统中已安装的鼠标指针
+    
+    Raises:
+        NotImplementedError: 当前平台不支持列出鼠标指针时
+    """
 
     def _display_frame(
         items: list[Any],
@@ -360,7 +411,11 @@ def list_cursor() -> None:
 
 
 def get_current_cursor() -> None:
-    """显示当前系统中设置的鼠标指针名称和大小"""
+    """显示当前系统中设置的鼠标指针名称和大小
+    
+    Raises:
+        NotImplementedError: 当前平台不支持读取鼠标指针信息时
+    """
 
     def _display_frame(
         items: list[Any],

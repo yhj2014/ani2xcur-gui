@@ -98,9 +98,9 @@ def set_gtk_xsettings_cursor_theme(
     cursor_name: str,
 ) -> None:
     """设置 GTK xsettings 配置文件中的鼠标指针主题
-
+    
     Args:
-        theme_name (str): 鼠标指针主题名称
+        cursor_name (str): 鼠标指针主题名称
     """
     GTK_XSETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     if GTK_XSETTINGS_PATH.is_file():
@@ -116,9 +116,9 @@ def set_gtk_xsettings_cursor_size(
     cursor_size: int,
 ) -> None:
     """设置 GTK xsettings 配置文件中的鼠标指针大小
-
+    
     Args:
-        size (int): 鼠标指针大小
+        cursor_size (int): 鼠标指针大小
     """
     GTK_XSETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     if GTK_XSETTINGS_PATH.is_file():

@@ -48,7 +48,16 @@ class INFSectionDict(Protocol):
         self,
         key: Literal["var", "constant"],
         default: Any = ...,
-    ) -> str | dict[str, str | list[str]] | Any: ...
+    ) -> str | dict[str, str | list[str]] | Any:
+        """获取 INF 节中的指定字段。
+
+        Args:
+            key: 要获取的字段名
+            default: 字段不存在时返回的默认值
+        Returns:
+            str | dict[str, str | list[str]] | Any: 字段值或默认值
+        """
+        ...
 
 
 class KnownINFSections(Protocol):
@@ -178,13 +187,11 @@ def dict_to_inf_strings_format(
     data_dict: dict[str, str],
     indent_width: int = 12,
 ) -> str:
-    """
-    将字典转换为 INF 文件 [Strings] 部分的格式
-
+    """将字典转换为 INF 文件 [Strings] 部分的格式
+    
     Args:
         data_dict (dict[str, str]): 包含键值对的字典
-        indent_width (int | None): 缩进宽度, 默认为 12 个空格
-
+        indent_width (int): 缩进宽度, 默认为 12 个空格
     Returns:
         str: 格式化的字符串
     """

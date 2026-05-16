@@ -36,15 +36,15 @@ def find_desktop_entry_file(
     is_toplevel: bool = True,  # pylint: disable=unused-argument
 ) -> Path | None:
     """搜索 DesktopEntry 文件路径
-
+    
     Args:
-        input_file (Path | str): 任意文件路径或压缩包的下载链接
+        input_file (Path | str): 任意文件路径、压缩包路径或压缩包下载链接
         temp_dir (Path): 临时文件夹, 用于保存寻找文件时产生的临时文件
-        depth (int | None): 递归搜索文件的深度
-        visited (set[Path] | None): 已访问路径集合, 用于防止死循环
+        depth (int): 递归搜索文件的深度
+        visited (set[Path | str] | None): 已访问路径集合, 用于防止死循环
         is_toplevel (bool): 是否为顶层调用
     Returns:
-        (Path | None): 当找到 DesktopEntry 文件时则返回其路径, 否则返回 None
+        Path | None: 当找到 DesktopEntry 文件时返回其路径, 否则返回 None
     """
 
     # 初始化去重集合
@@ -166,15 +166,15 @@ def find_inf_file(
     is_toplevel: bool = True,
 ) -> Path | None:
     """搜索 INF 文件路径
-
+    
     Args:
-        input_file (Path): 任意文件路径
+        input_file (Path | str): 任意文件路径、压缩包路径或压缩包下载链接
         temp_dir (Path): 临时文件夹, 用于保存寻找文件时产生的临时文件
-        depth (int | None): 递归搜索文件的深度
-        visited (set[Path] | None): 已访问路径集合, 用于防止死循环
+        depth (int): 递归搜索文件的深度
+        visited (set[Path | str] | None): 已访问路径集合, 用于防止死循环
         is_toplevel (bool): 是否为顶层调用, 用于控制是否修正光标文件路径
     Returns:
-        (Path | None): 当找到 INF 文件时则返回其路径, 否则返回 None
+        Path | None: 当找到 INF 文件时返回其路径, 否则返回 None
     """
 
     # 初始化去重集合

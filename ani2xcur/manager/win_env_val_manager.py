@@ -101,10 +101,12 @@ def delete_path_from_env_path(
     dtype: Literal["user", "system"] | None = "user",
 ) -> bool:
     """将指定路径从 PATH 环境变量中删除
-
+    
     Args:
         key_path (str): 要从 PATH 环境变量删除的路径
         dtype (Literal["user", "system"] | None): 要删除路径的环境变量类型
+    Returns:
+        bool: 删除成功时返回 True, 指定路径不存在时返回 False
     Raises:
         ValueError: 使用未知的环境变量类型时
     """

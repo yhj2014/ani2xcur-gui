@@ -1,4 +1,9 @@
-"""Xfce 桌面环境配置工具"""
+"""Xfce 桌面环境配置工具
+
+参考资料:
+- xfconf-query 命令参数: https://docs.xfce.org/xfce/xfconf/xfconf-query
+- xfsettingsd 监听并应用 xsettings: https://docs.xfce.org/xfce/xfce4-settings/xfsettingsd
+"""
 
 import shutil
 

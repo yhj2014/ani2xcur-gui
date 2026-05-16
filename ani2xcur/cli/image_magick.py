@@ -48,7 +48,16 @@ def install_image_magick(
         ),
     ] = False,
 ) -> None:
-    """安装 ImageMagick 到系统中"""
+    """安装 ImageMagick 到系统中
+    
+    Args:
+        install_path: Windows 平台自定义安装路径
+        force: 是否跳过确认提示
+    Raises:
+        NotImplementedError: 当前平台不支持安装 ImageMagick 时
+        PermissionError: 当前权限不足时
+        RuntimeError: 自动安装失败时
+    """
     if sys.platform == "win32":
         if not is_admin_on_windows():
             raise PermissionError("当前未使用管理员权限运行 Ani2xcur, 无法安装 ImageMagick, 请使用管理员权限启动 Ani2xcur")
@@ -91,7 +100,15 @@ def uninstall_image_magick(
         ),
     ] = False,
 ) -> None:
-    """将 ImageMagick 从系统中卸载"""
+    """将 ImageMagick 从系统中卸载
+    
+    Args:
+        force: 是否跳过确认提示
+    Raises:
+        NotImplementedError: 当前平台不支持卸载 ImageMagick 时
+        PermissionError: 当前权限不足时
+        RuntimeError: 自动卸载失败时
+    """
     if sys.platform == "win32":
         if not is_admin_on_windows():
             raise PermissionError("当前未使用管理员权限运行 Ani2xcur, 无法卸载 ImageMagick, 请使用管理员权限启动 Ani2xcur")

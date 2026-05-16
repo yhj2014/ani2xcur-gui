@@ -30,9 +30,11 @@ def check_windows_cursor_size_value(
     value: int,
 ) -> int:
     """检查设置的 Windows 鼠标指针大小是否符合范围
-
+    
     Args:
         value (int): 鼠标指针大小
+    Returns:
+        int: 校验通过后的鼠标指针大小
     Raises:
         TypeError: 鼠标指针大小不是 int 时
         ValueError: 鼠标指针大小超过有效范围时
@@ -63,11 +65,13 @@ def convert_windows_cursor_base_size_to_size(
     value: int,
 ) -> int | None:
     """将 CursorBaseSize 值转换为 Windows 设置页中的鼠标指针大小档位
-
+    
     Args:
         value (int): CursorBaseSize 注册表值
     Returns:
-        (int | None): 对应的鼠标指针大小档位, 无法匹配时返回 None
+        int | None: 对应的鼠标指针大小档位, 无法匹配时返回 None
+    Raises:
+        TypeError: CursorBaseSize 值不是 int 时
     """
     rng = WINDOWS_CURSOR_BASE_SIZE_RANGE
     if not isinstance(value, int):
@@ -85,9 +89,11 @@ def check_linux_cursor_size_value(
     value: int,
 ) -> int:
     """检查设置的 Linux 鼠标指针大小是否符合范围
-
+    
     Args:
         value (int): 鼠标指针大小
+    Returns:
+        int: 校验通过后的鼠标指针大小
     Raises:
         TypeError: 鼠标指针大小不是 int 时
         ValueError: 鼠标指针大小超过有效范围时

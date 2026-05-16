@@ -98,18 +98,18 @@ def run_cmd(
     check: bool | None = True,
 ) -> str | None:
     """执行 Shell 命令
-
+    
     Args:
         command (str | list[str]): 要执行的命令
         custom_env (dict[str, str] | None): 自定义环境变量
         live (bool | None): 是否实时输出命令执行日志
         shell (bool | None): 是否使用内置 Shell 执行命令
-        cwd (Path | str | None): 执行进程时的起始路径
-        check (bool | None): 检查进程退出状态, 当异常退出时引发 RuntimeError
+        cwd (Path | None): 执行进程时的起始路径
+        check (bool | None): 是否检查进程退出状态
     Returns:
-        (str | None): 命令执行时输出的内容, 当 live=True / 执行命令发生错误时输出内容为 None
+        str | None: 命令输出内容, 当 live=True 或执行失败时可能返回 None
     Raises:
-        RuntimeError: 当命令执行失败时
+        RuntimeError: 命令执行失败且 check=True 时
     """
 
     if shell is None:

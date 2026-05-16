@@ -232,13 +232,13 @@ def extend_list_to_length(
     fill_value: str | None = "",
 ) -> list[Any]:
     """将列表扩展到指定长度
-
+    
     Args:
         lst (list[Any]): 原始列表
         target_length (int): 扩充到的指定长度
         fill_value (str | None): 填充的内容
     Returns:
-        list[str]: 扩展长度后的列表
+        list[Any]: 扩展长度后的列表
     """
     if len(lst) < target_length:
         lst.extend([fill_value] * (target_length - len(lst)))
@@ -277,19 +277,19 @@ def generate_random_string(
     include_digits: bool = True,
     include_special: bool = False,
 ) -> str:
-    """
-    生成随机字符串
-
+    """生成随机字符串
+    
     Args:
-        length (int | None): 字符串长度, 默认为 8
-        chars (str | None): 自定义字符集，如果提供则忽略其他参数
-        include_uppercase (bool | None): 是否包含大写字母
-        include_lowercase (bool | None): 是否包含小写字母
-        include_digits (bool | None): 是否包含数字
-        include_special (bool | None): 是否包含特殊字符
-
+        length (int): 字符串长度, 默认为 8
+        chars (str | None): 自定义字符集, 如果提供则忽略其他参数
+        include_uppercase (bool): 是否包含大写字母
+        include_lowercase (bool): 是否包含小写字母
+        include_digits (bool): 是否包含数字
+        include_special (bool): 是否包含特殊字符
     Returns:
         str: 生成的随机字符串
+    Raises:
+        ValueError: 字符池为空时
     """
     if chars is not None:
         char_pool = chars

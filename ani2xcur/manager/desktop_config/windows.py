@@ -143,14 +143,14 @@ def refresh_system_params(
     cursor_base_size: int | None = None,
 ) -> None:
     """通知系统刷新设置以应用更改
-
+    
+    参考资料:
+    - SystemParametersInfoW: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow
+    - PowerShell 刷新光标大小讨论: https://stackoverflow.com/questions/60104778/change-and-update-the-size-of-the-cursor-in-windows-10-via-powershell
+    - Windows 11 光标刷新讨论: https://www.elevenforum.com/t/reloading-mouse-cursors-and-changing-their-size.37551/
+    
     Args:
         cursor_base_size (int | None): Windows 鼠标指针基础大小, 传入时会同步应用当前会话中的指针大小
-
-    参考资料:
-        https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow
-        https://stackoverflow.com/questions/60104778/change-and-update-the-size-of-the-cursor-in-windows-10-via-powershell
-        https://www.elevenforum.com/t/reloading-mouse-cursors-and-changing-their-size.37551/
     """
     if cursor_base_size is not None:
         system_parameters_info(SPI_SETCURSORBASESIZE, 0, cursor_base_size, SPIF_APPLY_CHANGE)
@@ -280,15 +280,13 @@ def broadcast_settings_change(
     area_name: Literal["Environment", "Policy", "intl"] | None = "Environment",
 ) -> bool:
     """发送 WM_SETTINGCHANGE 广播消息通知系统设置已更改
-
+    
     Args:
-        area_name (Literal["Environment", "Policy", "intl"] | None):
-            更改的区域名称
-            - 如果是环境变量, 传入 `Environment`
-            - 如果是通过注册表更改了策略或通用设置, 传入 `Policy`
-            - 如果是鼠标/字体等, 传入 `intl` 或留空
+        area_name (Literal["Environment", "Policy", "intl"] | None): 更改的区域名称
     Returns:
         bool: 通知结果
+    Raises:
+        ImportError: 未安装 pywin32 时
     """
     # WM_SETTINGCHANGE 的消息数值在 win32con 中已定义
     # HWND_BROADCAST: 0xFFFF (发送给所有顶层窗口)
@@ -316,13 +314,15 @@ def create_windows_shortcut(
     icon_path: Path | None = None,
 ) -> None:
     """创建 Windows 快捷方式
-
+    
     Args:
         target_path (Path): 目标文件路径
-        shortcut_path (Path): 快捷方式保存路径 (应以 .lnk 结尾)
+        shortcut_path (Path): 快捷方式保存路径
         description (str | None): 快捷方式描述
         working_dir (Path | None): 工作目录
         icon_path (Path | None): 图标路径
+    Raises:
+        ImportError: 未安装 pywin32 时
     """
     if win32com_client is None:
         raise ImportError("创建 Windows 快捷方式需要安装 pywin32")

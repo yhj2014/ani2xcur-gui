@@ -122,13 +122,14 @@ def extract_scheme_info_from_desktop_entry(
     desktop_entry_file: Path,
 ) -> InstallLinuxSchemeInfo:
     """从 Desktop Entry 文件中获取鼠标指针配置
-
+    
     Args:
         desktop_entry_file (Path): Desktop Entry 文件路径
     Returns:
         InstallLinuxSchemeInfo: 鼠标指针安装配置
     Raises:
         FileNotFoundError: 鼠标指针文件缺失时
+        ValueError: 鼠标指针配置内容不完整时
     """
     desktop_entry_content = parse_desktop_entry_content(desktop_entry_file)
     theme_info = desktop_entry_content["Icon Theme"]

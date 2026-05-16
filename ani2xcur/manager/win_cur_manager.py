@@ -241,15 +241,17 @@ def generate_scheme_reg_string(
     value: str,
 ) -> str:
     """生成 INF 字符串中 [Scheme.Reg] 格式的字符串
-
+    
     [Scheme.Reg] 用于创建 Windows 注册表值, 格式: `<注册表根键>,<注册表子路径>,<键名>,<数据类型>,<值>`
-
+    
     Args:
         key (str): 注册表根键
         sub_key (str): 注册表子路径
         value_name (str): 键名
         dtype (str): 数据类型
         value (str): 值
+    Returns:
+        str: [Scheme.Reg] 格式的字符串
     """
     return f'{key},"{sub_key}","{value_name}",{dtype},"{value}"'
 
@@ -431,12 +433,12 @@ def install_windows_cursor(
     cursor_install_path: Path | None = None,
 ) -> None:
     """通过 INF 配置文件安装鼠标指针
-
+    
     Args:
         inf_file (Path): 鼠标指针配置文件路径
         cursor_install_path (Path | None): 自定义鼠标指针文件安装路径, 当为 None 时使用 INF 配置文件中的路径
-    Returns:
-        PermissionError: 当复制鼠标指针时没有权限进行复制时
+    Raises:
+        PermissionError: 复制鼠标指针文件时没有权限时
     """
     scheme_info = extract_scheme_info_from_inf(inf_file)
     copy_paths: list[tuple[Path, Path]] = []
@@ -615,19 +617,17 @@ def generate_cursor_scheme_config(
     cursor_name: str,
     custom_install_path: Path | None = None,
 ) -> WindowsCursorSchemeConfig:
-    """生成鼠标指针的配置, 配置字典字段:
-    - `cursor_src_file`: 鼠标指针文件路径列表, 用于导出文件
-    - `destination_dirs`: [DestinationDirs] 字段, 用于声明 Windows 读取 INF 文件时获取需要复制鼠标指针到的路径
-    - `wreg`: [Wreg] 字段, 用于声明 Windows 读取 INF 文件时立刻执行的配置鼠标指针应用操作
-    - `scheme_reg`: [Scheme.Reg] 字段, 写入到注册表中的鼠标指针方案
-    - `scheme_cur`: [Scheme.Cur] 字段, 保存需要复制的鼠标指针列表
-    - `strings`: [Strings] 字段, 保存 INF 文件中需要的变量
-
+    """生成鼠标指针的配置字典
+    
+    配置字段包括 cursor_src_file、destination_dirs、wreg、scheme_reg、scheme_cur 和 strings。
+    
     Args:
         cursor_name (str): 要导出的鼠标指针方案的名称
-        custom_install_path (Path | None): 自定义鼠标指针安装文件
+        custom_install_path (Path | None): 自定义鼠标指针安装路径
     Returns:
         WindowsCursorSchemeConfig: 鼠标指针的配置字典
+    Raises:
+        ValueError: 鼠标指针方案不存在或配置不完整时
     """
 
     # 查找鼠标指针对应的方案信息

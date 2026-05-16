@@ -138,7 +138,27 @@ def win2xcur(
         ),
     ] = None,
 ) -> None:
-    """将 Windows 鼠标指针文件包转换为 Linux 鼠标指针文件包"""
+    """将 Windows 鼠标指针文件包转换为 Linux 鼠标指针文件包
+    
+    Args:
+        input_path: Windows 鼠标指针文件、压缩包或下载链接
+        output_path: 转换结果保存路径
+        shadow: 是否模拟 Windows 阴影效果
+        shadow_opacity: 阴影不透明度
+        shadow_radius: 阴影模糊半径
+        shadow_sigma: 阴影模糊西格玛值
+        shadow_x: 阴影 x 偏移量
+        shadow_y: 阴影 y 偏移量
+        shadow_color: 阴影颜色
+        scale: 光标缩放倍数
+        compress: 是否在转换后打包
+        compress_format: 压缩包格式
+        install: 是否在转换完成后安装
+        install_path: 自定义安装路径
+    Raises:
+        FileNotFoundError: 未找到需要的鼠标指针配置文件时
+        RuntimeError: 未安装 ImageMagick 时
+    """
     if not check_image_magick_is_installed():
         raise RuntimeError("未安装 ImageMagick, 无法进行鼠标指针转换, 请使用 ani2xcur imagemagick install 命令进行安装")
 
@@ -255,7 +275,20 @@ def x2wincur(
         ),
     ] = None,
 ) -> None:
-    """将 Linux 鼠标指针文件包转换为 Windows 鼠标指针文件包"""
+    """将 Linux 鼠标指针文件包转换为 Windows 鼠标指针文件包
+    
+    Args:
+        input_path: Linux 鼠标指针文件、压缩包或下载链接
+        output_path: 转换结果保存路径
+        scale: 光标缩放倍数
+        compress: 是否在转换后打包
+        compress_format: 压缩包格式
+        install: 是否在转换完成后安装
+        install_path: 自定义安装路径
+    Raises:
+        FileNotFoundError: 未找到需要的鼠标指针配置文件或光标目录时
+        RuntimeError: 未安装 ImageMagick 时
+    """
     if not check_image_magick_is_installed():
         raise RuntimeError("未安装 ImageMagick, 无法进行鼠标指针转换, 请使用 ani2xcur imagemagick install 命令进行安装")
 
