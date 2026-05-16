@@ -5,6 +5,40 @@ import shutil
 from ani2xcur.cmd import run_cmd
 from ani2xcur.utils import safe_convert_to_int
 
+XFCONF_QUERY = "xfconf-query"
+XSETTINGS_CHANNEL = "xsettings"
+CURSOR_THEME_PROPERTY = "/Gtk/CursorThemeName"
+CURSOR_SIZE_PROPERTY = "/Gtk/CursorThemeSize"
+
+
+def _xfconf_query_executable() -> str | None:
+    if shutil.which(XFCONF_QUERY):
+        return XFCONF_QUERY
+    return None
+
+
+def _set_xfce_property(property_name: str, property_type: str, value: str) -> None:
+    executable = _xfconf_query_executable()
+    if executable is None:
+        return
+
+    run_cmd(
+        [
+            executable,
+            "--channel",
+            XSETTINGS_CHANNEL,
+            "--property",
+            property_name,
+            "--create",
+            "--type",
+            property_type,
+            "--set",
+            value,
+        ],
+        live=False,
+        check=False,
+    )
+
 
 def get_xfce_cursor_theme() -> str | None:
     """获取 Xfce 桌面当前使用的鼠标指针配置名称
@@ -12,26 +46,28 @@ def get_xfce_cursor_theme() -> str | None:
     Returns:
         (str | None): 当前使用的鼠标指针名称
     """
-    if not shutil.which("xfconf-query"):
+    executable = _xfconf_query_executable()
+    if executable is None:
         return None
 
     result = run_cmd(
         [
-            "xfconf-query",
+            executable,
             "--channel",
-            "xsettings",
+            XSETTINGS_CHANNEL,
             "--property",
-            "/Gtk/CursorThemeName",
+            CURSOR_THEME_PROPERTY,
         ],
         live=False,
         check=False,
     )
 
-    if isinstance(result, str):
-        result = result.strip()
+    if not isinstance(result, str):
+        return None
 
+    result = result.strip()
     if result == "":
-        result = None
+        return None
 
     return result
 
@@ -42,60 +78,52 @@ def get_xfce_cursor_size() -> int | None:
     Returns:
         (int | None): 当前使用的鼠标指针大小
     """
-    if not shutil.which("xfconf-query"):
+    executable = _xfconf_query_executable()
+    if executable is None:
         return None
 
     result = run_cmd(
         [
-            "xfconf-query",
+            executable,
             "--channel",
-            "xsettings",
+            XSETTINGS_CHANNEL,
             "--property",
-            "/Gtk/CursorThemeSize",
+            CURSOR_SIZE_PROPERTY,
         ],
         live=False,
         check=False,
     )
-    if isinstance(result, str):
-        result = result.strip()
 
+    if not isinstance(result, str):
+        return None
+
+    result = result.strip()
     if result == "":
-        result = None
+        return None
 
-    return safe_convert_to_int(result)
+    cursor_size = safe_convert_to_int(result)
+    if isinstance(cursor_size, int):
+        return cursor_size
+    return None
 
 
 def set_xfce_cursor_theme(
     cursor_name: str,
-) -> str | None:
+) -> None:
     """设置 Xfce 桌面当前使用的鼠标指针配置名称
 
     Args:
         cursor_name (str): 要设置的鼠标指针配置名称
     """
-    if not shutil.which("xfconf-query"):
-        return None
-
-    run_cmd(
-        ["xfconf-query", "--channel", "xsettings", "--property", "/Gtk/CursorThemeName", "--set", cursor_name],
-        live=False,
-        check=False,
-    )
+    _set_xfce_property(CURSOR_THEME_PROPERTY, "string", cursor_name)
 
 
 def set_xfce_cursor_size(
     cursor_size: int,
-) -> int | None:
+) -> None:
     """设置 Xfce 桌面当前使用的鼠标指针大小
 
     Args:
         cursor_size (int): 要设置的鼠标指针大小
     """
-    if not shutil.which("xfconf-query"):
-        return None
-
-    run_cmd(
-        ["xfconf-query", "--channel", "xsettings", "--property", "/Gtk/CursorThemeSize", "--set", str(cursor_size)],
-        live=False,
-        check=False,
-    )
+    _set_xfce_property(CURSOR_SIZE_PROPERTY, "int", str(cursor_size))

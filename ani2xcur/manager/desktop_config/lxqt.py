@@ -1,12 +1,55 @@
 """LXQT 桌面环境配置工具"""
 
+import shutil
 import configparser
 from pathlib import Path
 
+from ani2xcur.cmd import run_cmd
 from ani2xcur.utils import safe_convert_to_int
+from ani2xcur.manager.desktop_config import x_org
 
 LXQT_CONFIG_PATH = Path("~/.config/lxqt/session.conf").expanduser()
 """LXQT 桌面的配置文件路径"""
+
+LXQT_GENERAL_SECTION = "General"
+CURSOR_THEME_KEY = "cursor_theme"
+CURSOR_SIZE_KEY = "cursor_size"
+
+
+def _read_lxqt_config() -> configparser.ConfigParser:
+    config = configparser.ConfigParser()
+    config.read(LXQT_CONFIG_PATH, encoding="utf-8")
+    return config
+
+
+def _write_lxqt_config(config: configparser.ConfigParser) -> None:
+    LXQT_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(LXQT_CONFIG_PATH, "w", encoding="utf-8") as f:
+        config.write(f, space_around_delimiters=False)
+
+
+def _ensure_general_section(config: configparser.ConfigParser) -> None:
+    if LXQT_GENERAL_SECTION not in config:
+        config[LXQT_GENERAL_SECTION] = {}
+
+
+def _merge_x_resources() -> None:
+    if not shutil.which("xrdb") or not x_org.X_RESOURCES_PATH.is_file():
+        return
+
+    run_cmd(["xrdb", "-merge", str(x_org.X_RESOURCES_PATH)], live=False, check=False)
+
+
+def _refresh_root_cursor() -> None:
+    if not shutil.which("xsetroot"):
+        return
+
+    run_cmd(["xsetroot", "-cursor_name", "left_ptr"], live=False, check=False)
+
+
+def _apply_lxqt_cursor_config() -> None:
+    _merge_x_resources()
+    _refresh_root_cursor()
 
 
 def get_lxqt_cursor_theme() -> str | None:
@@ -15,11 +58,13 @@ def get_lxqt_cursor_theme() -> str | None:
     Returns:
         (str | None): 当前使用的鼠标指针名称
     """
-    config = configparser.ConfigParser()
-    config.read(LXQT_CONFIG_PATH, encoding="utf-8")
-    if "General" in config and "cursor_theme" in config["General"]:
-        return config.get("General", "cursor_theme")
-    return None
+    config = _read_lxqt_config()
+    if LXQT_GENERAL_SECTION in config and CURSOR_THEME_KEY in config[LXQT_GENERAL_SECTION]:
+        cursor_theme = config.get(LXQT_GENERAL_SECTION, CURSOR_THEME_KEY).strip()
+        if cursor_theme != "":
+            return cursor_theme
+
+    return x_org.get_x_resources_cursor_theme()
 
 
 def get_lxqt_cursor_size() -> int | None:
@@ -28,11 +73,13 @@ def get_lxqt_cursor_size() -> int | None:
     Returns:
         (int | None): 当前使用的鼠标指针大小
     """
-    config = configparser.ConfigParser()
-    config.read(LXQT_CONFIG_PATH, encoding="utf-8")
-    if "General" in config and "cursor_size" in config["General"]:
-        return safe_convert_to_int(config.get("General", "cursor_size"))
-    return None
+    config = _read_lxqt_config()
+    if LXQT_GENERAL_SECTION in config and CURSOR_SIZE_KEY in config[LXQT_GENERAL_SECTION]:
+        cursor_size = safe_convert_to_int(config.get(LXQT_GENERAL_SECTION, CURSOR_SIZE_KEY))
+        if isinstance(cursor_size, int):
+            return cursor_size
+
+    return x_org.get_x_resources_cursor_size()
 
 
 def set_lxqt_cursor_theme(
@@ -43,15 +90,13 @@ def set_lxqt_cursor_theme(
     Args:
         cursor_name (str): 要设置的鼠标指针配置名称
     """
-    LXQT_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    config = configparser.ConfigParser()
-    config.read(LXQT_CONFIG_PATH, encoding="utf-8")
-    if "General" not in config:
-        config["General"] = {}
+    config = _read_lxqt_config()
+    _ensure_general_section(config)
+    config[LXQT_GENERAL_SECTION][CURSOR_THEME_KEY] = cursor_name
+    _write_lxqt_config(config)
 
-    config["General"]["cursor_theme"] = cursor_name
-    with open(LXQT_CONFIG_PATH, "w", encoding="utf-8") as f:
-        config.write(f, space_around_delimiters=False)
+    x_org.set_x_resources_cursor_theme(cursor_name)
+    _apply_lxqt_cursor_config()
 
 
 def set_lxqt_cursor_size(
@@ -62,12 +107,10 @@ def set_lxqt_cursor_size(
     Args:
         cursor_size (int): 要设置的鼠标指针大小
     """
-    LXQT_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    config = configparser.ConfigParser()
-    config.read(LXQT_CONFIG_PATH, encoding="utf-8")
-    if "General" not in config:
-        config["General"] = {}
+    config = _read_lxqt_config()
+    _ensure_general_section(config)
+    config[LXQT_GENERAL_SECTION][CURSOR_SIZE_KEY] = str(cursor_size)
+    _write_lxqt_config(config)
 
-    config["General"]["cursor_size"] = str(cursor_size)
-    with open(LXQT_CONFIG_PATH, "w", encoding="utf-8") as f:
-        config.write(f, space_around_delimiters=False)
+    x_org.set_x_resources_cursor_size(cursor_size)
+    _apply_lxqt_cursor_config()

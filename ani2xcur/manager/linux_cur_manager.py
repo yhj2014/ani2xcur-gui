@@ -482,8 +482,33 @@ KDE:
         plasma-apply-cursortheme "${cursor_name}"
     fi
 
+LXQt:
+    mkdir -p "${HOME}/.config/lxqt"
+    session_conf="${HOME}/.config/lxqt/session.conf"
+    if [ ! -f "${session_conf}" ]; then
+        printf '[General]\ncursor_theme=%s\n' "${cursor_name}" > "${session_conf}"
+    elif grep -q '^cursor_theme=' "${session_conf}"; then
+        sed -i "s/^cursor_theme=.*/cursor_theme=${cursor_name}/" "${session_conf}"
+    elif grep -q '^\[General\]' "${session_conf}"; then
+        sed -i "/^\[General\]/a cursor_theme=${cursor_name}" "${session_conf}"
+    else
+        printf '\n[General]\ncursor_theme=%s\n' "${cursor_name}" >> "${session_conf}"
+    fi
+    touch "${HOME}/.Xresources"
+    if grep -q '^Xcursor.theme:' "${HOME}/.Xresources"; then
+        sed -i "s/^Xcursor.theme:.*/Xcursor.theme: ${cursor_name}/" "${HOME}/.Xresources"
+    else
+        printf 'Xcursor.theme: %s\n' "${cursor_name}" >> "${HOME}/.Xresources"
+    fi
+    if command -v xrdb >/dev/null 2>&1; then
+        xrdb -merge "${HOME}/.Xresources"
+    fi
+    if command -v xsetroot >/dev/null 2>&1; then
+        xsetroot -cursor_name left_ptr
+    fi
+
 Xfce:
-    xfconf-query --channel xsettings --property /Gtk/CursorThemeName --set "${cursor_name}"
+    xfconf-query --channel xsettings --property /Gtk/CursorThemeName --create --type string --set "${cursor_name}"
 EOF
 }
 
