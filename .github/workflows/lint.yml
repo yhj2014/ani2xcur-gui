@@ -1,15 +1,44 @@
-name: Ruff Lint
+name: Lint
 
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  Ruff-Lint:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install lint dependencies
+        run: |
+          uv venv
+          uv pip install -e .
+          uv pip install ruff ty python-docstring-checker
+
       - name: Run Ruff
-        uses: astral-sh/ruff-action@v3
+        run: uv run python -m ruff check
+
+      - name: Run ty (Linux)
+        run: |
+          PYTHON_PATH="$(uv run python -c 'import sys; print(sys.executable)')"
+          uv run python -m ty check --python "$PYTHON_PATH" --python-platform linux --output-format concise
+
+      - name: Run ty (Windows)
+        run: |
+          PYTHON_PATH="$(uv run python -c 'import sys; print(sys.executable)')"
+          uv run python -m ty check --python "$PYTHON_PATH" --python-platform win32 --output-format concise
+
+      - name: Check docstrings
+        run: uv run python -m python_docstring_checker ani2xcur
