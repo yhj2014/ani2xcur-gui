@@ -1,6 +1,7 @@
 """入口文件"""
 
 import sys
+import traceback
 
 import typer
 from click.exceptions import Abort, ClickException, Exit
@@ -94,5 +95,6 @@ def main() -> None:
         e.show()
         sys.exit(e.exit_code)
     except Exception as e:  # pylint: disable=broad-exception-caught
+        traceback.print_exc()
         logger.error("命令执行失败: %s", e)
         sys.exit(1)

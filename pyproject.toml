@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Desktop Environment",
 ]
 dependencies = [
-    "win2xcur>=0.2.0",
+    "win2xcur>=0.2.1",
     "typer",
     "click",
     "zstandard",
