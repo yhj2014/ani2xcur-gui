@@ -1,0 +1,79 @@
+[Version]
+signature="$CHICAGO$"
+
+
+[DefaultInstall]
+CopyFiles = Scheme.Cur
+AddReg    = Scheme.Reg,Wreg
+
+
+[DestinationDirs]
+Scheme.Cur = 10,"%CUR_DIR%"
+
+
+[Scheme.Reg]
+HKCU,"Control Panel\Cursors\Schemes","%SCHEME_NAME%",0x00020000,"%10%\%CUR_DIR%\%Arrow%,%10%\%CUR_DIR%\%Help%,%10%\%CUR_DIR%\%AppStarting%,%10%\%CUR_DIR%\%Wait%,%10%\%CUR_DIR%\%Crosshair%,%10%\%CUR_DIR%\%IBeam%,%10%\%CUR_DIR%\%NWPen%,%10%\%CUR_DIR%\%No%,%10%\%CUR_DIR%\%SizeNS%,%10%\%CUR_DIR%\%SizeWE%,%10%\%CUR_DIR%\%SizeNWSE%,%10%\%CUR_DIR%\%SizeNESW%,%10%\%CUR_DIR%\%SizeAll%,%10%\%CUR_DIR%\%UpArrow%,%10%\%CUR_DIR%\%Hand%,%10%\%CUR_DIR%\%Pin%,%10%\%CUR_DIR%\%Person%"
+
+
+[Wreg]
+HKCU,"Control Panel\Cursors",,0x00020000,"%SCHEME_NAME%"
+HKCU,"Control Panel\Cursors",Arrow,0x00020000,"%10%\%CUR_DIR%\%Arrow%"
+HKCU,"Control Panel\Cursors",Help,0x00020000,"%10%\%CUR_DIR%\%Help%"
+HKCU,"Control Panel\Cursors",AppStarting,0x00020000,"%10%\%CUR_DIR%\%AppStarting%"
+HKCU,"Control Panel\Cursors",Wait,0x00020000,"%10%\%CUR_DIR%\%Wait%"
+HKCU,"Control Panel\Cursors",Crosshair,0x00020000,"%10%\%CUR_DIR%\%Crosshair%"
+HKCU,"Control Panel\Cursors",IBeam,0x00020000,"%10%\%CUR_DIR%\%IBeam%"
+HKCU,"Control Panel\Cursors",NWPen,0x00020000,"%10%\%CUR_DIR%\%NWPen%"
+HKCU,"Control Panel\Cursors",No,0x00020000,"%10%\%CUR_DIR%\%No%"
+HKCU,"Control Panel\Cursors",SizeNS,0x00020000,"%10%\%CUR_DIR%\%SizeNS%"
+HKCU,"Control Panel\Cursors",SizeWE,0x00020000,"%10%\%CUR_DIR%\%SizeWE%"
+HKCU,"Control Panel\Cursors",SizeNWSE,0x00020000,"%10%\%CUR_DIR%\%SizeNWSE%"
+HKCU,"Control Panel\Cursors",SizeNESW,0x00020000,"%10%\%CUR_DIR%\%SizeNESW%"
+HKCU,"Control Panel\Cursors",SizeAll,0x00020000,"%10%\%CUR_DIR%\%SizeAll%"
+HKCU,"Control Panel\Cursors",UpArrow,0x00020000,"%10%\%CUR_DIR%\%UpArrow%"
+HKCU,"Control Panel\Cursors",Hand,0x00020000,"%10%\%CUR_DIR%\%Hand%"
+HKCU,"Control Panel\Cursors",Pin,0x00020000,"%10%\%CUR_DIR%\%Pin%"
+HKCU,"Control Panel\Cursors",Person,0x00020000,"%10%\%CUR_DIR%\%Person%"
+HKLM,"SOFTWARE\Microsoft\Windows\CurrentVersion\Runonce\Setup\","",,"rundll32.exe shell32.dll,Control_RunDLL main.cpl @0"
+
+
+[Scheme.Cur]
+"Arrow.cur"
+"Help.cur"
+"AppStarting.ani"
+"Wait.ani"
+"Crosshair.cur"
+"IBeam.cur"
+"NWPen.cur"
+"No.cur"
+"SizeNS.cur"
+"SizeWE.cur"
+"SizeNWSE.cur"
+"SizeNESW.cur"
+"SizeAll.cur"
+"UpArrow.cur"
+"Hand.cur"
+"Pin.cur"
+"Person.cur"
+
+
+[Strings]
+SCHEME_NAME		= "DMZ-White"
+CUR_DIR		= "Cursors\DMZ-White"
+Arrow		= "Arrow.cur"
+Help		= "Help.cur"
+AppStarting		= "AppStarting.ani"
+Wait		= "Wait.ani"
+Crosshair		= "Crosshair.cur"
+IBeam		= "IBeam.cur"
+NWPen		= "NWPen.cur"
+No		= "No.cur"
+SizeNS		= "SizeNS.cur"
+SizeWE		= "SizeWE.cur"
+SizeNWSE		= "SizeNWSE.cur"
+SizeNESW		= "SizeNESW.cur"
+SizeAll		= "SizeAll.cur"
+UpArrow		= "UpArrow.cur"
+Hand		= "Hand.cur"
+Pin		= "Pin.cur"
+Person		= "Person.cur"
