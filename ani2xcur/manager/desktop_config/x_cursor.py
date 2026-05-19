@@ -114,6 +114,16 @@ def _configure_libraries(x11: Any, xcursor: Any, xfixes: Any) -> None:
     xfixes.XFixesChangeCursorByName.restype = None
 
 
+def _is_wayland_session() -> bool:
+    session_type = os.environ.get("XDG_SESSION_TYPE", "").casefold()
+    if session_type == "wayland":
+        return True
+    if session_type == "x11":
+        return False
+
+    return bool(os.environ.get("WAYLAND_DISPLAY")) and bool(os.environ.get("DISPLAY"))
+
+
 def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None) -> None:
     """刷新当前 X11 会话中已经加载过的常见鼠标指针
 
@@ -121,7 +131,7 @@ def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None
         cursor_name (str | None): 要应用的鼠标指针主题名称
         cursor_size (int | None): 要应用的鼠标指针大小
     """
-    if sys.platform == "win32" or not os.environ.get("DISPLAY"):
+    if sys.platform == "win32" or not os.environ.get("DISPLAY") or _is_wayland_session():
         return
 
     x11 = _load_library("X11")
