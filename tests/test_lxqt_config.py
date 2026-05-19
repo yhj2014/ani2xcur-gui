@@ -6,6 +6,8 @@ from ani2xcur.manager.desktop_config import lxqt, x_org
 def _set_config_paths(monkeypatch, tmp_path):
     monkeypatch.setattr(lxqt, "LXQT_CONFIG_PATH", tmp_path / "session.conf")
     monkeypatch.setattr(x_org, "X_RESOURCES_PATH", tmp_path / ".Xresources")
+    monkeypatch.setenv("XDG_SESSION_TYPE", "x11")
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
 
 
 def test_set_lxqt_cursor_theme_writes_session_and_xresources(monkeypatch, tmp_path):
@@ -78,6 +80,30 @@ def test_set_lxqt_cursor_theme_updates_dbus_activation_environment(monkeypatch, 
 
     def fake_which(name):
         if name == "dbus-update-activation-environment":
+            return f"/usr/bin/{name}"
+        return None
+
+    def fake_run_cmd(command, **kwargs):
+        calls.append(command)
+        return None
+
+    monkeypatch.setattr(lxqt.shutil, "which", fake_which)
+    monkeypatch.setattr(lxqt, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(lxqt, "apply_x_cursor_theme", lambda name, size=None: None)
+
+    lxqt.set_lxqt_cursor_theme("Bibata")
+
+    assert calls == [["dbus-update-activation-environment", "--systemd", "XCURSOR_THEME=Bibata"]]
+
+
+def test_set_lxqt_cursor_theme_skips_x11_refresh_commands_on_wayland(monkeypatch, tmp_path):
+    calls = []
+    _set_config_paths(monkeypatch, tmp_path)
+    monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
+    monkeypatch.setenv("WAYLAND_DISPLAY", "wayland-0")
+
+    def fake_which(name):
+        if name in {"xrdb", "xsetroot", "dbus-update-activation-environment"}:
             return f"/usr/bin/{name}"
         return None
 

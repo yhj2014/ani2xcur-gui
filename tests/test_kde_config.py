@@ -23,6 +23,9 @@ def test_get_kde_cursor_theme_prefers_plasma_6(monkeypatch):
 def test_set_kde_cursor_theme_applies_theme_then_writes_config(monkeypatch):
     calls = []
     x_calls = []
+    monkeypatch.setenv("XDG_SESSION_TYPE", "x11")
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
 
     def fake_which(name):
         if name in {"kwriteconfig6", "plasma-apply-cursortheme"}:
@@ -49,6 +52,9 @@ def test_set_kde_cursor_theme_applies_theme_then_writes_config(monkeypatch):
 def test_set_kde_cursor_theme_applies_when_writeconfig_is_missing(monkeypatch):
     calls = []
     x_calls = []
+    monkeypatch.setenv("XDG_SESSION_TYPE", "x11")
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
 
     def fake_which(name):
         if name == "plasma-apply-cursortheme":
@@ -72,6 +78,9 @@ def test_set_kde_cursor_theme_applies_when_writeconfig_is_missing(monkeypatch):
 def test_set_kde_cursor_size_refreshes_current_theme(monkeypatch):
     calls = []
     x_calls = []
+    monkeypatch.setenv("XDG_SESSION_TYPE", "x11")
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
 
     def fake_which(name):
         if name in {"kwriteconfig6", "kreadconfig6", "plasma-apply-cursortheme"}:
@@ -96,6 +105,68 @@ def test_set_kde_cursor_size_refreshes_current_theme(monkeypatch):
         ["plasma-apply-cursortheme", "Breeze"],
     ]
     assert x_calls == [("Breeze", 32)]
+
+
+def test_set_kde_cursor_theme_on_wayland_writes_config_without_live_apply(monkeypatch):
+    calls = []
+    x_calls = []
+    monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
+    monkeypatch.setenv("WAYLAND_DISPLAY", "wayland-0")
+    monkeypatch.setenv("DISPLAY", ":0")
+
+    def fake_which(name):
+        if name in {"kwriteconfig5", "kreadconfig5", "plasma-apply-cursortheme", "dbus-send"}:
+            return f"/usr/bin/{name}"
+        return None
+
+    def fake_run_cmd(command, **kwargs):
+        calls.append(command)
+        if command[0] == "kreadconfig5":
+            return "24\n"
+        return None
+
+    monkeypatch.setattr(kde.shutil, "which", fake_which)
+    monkeypatch.setattr(kde, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(kde, "apply_x_cursor_theme", lambda name, size=None: x_calls.append((name, size)))
+
+    kde.set_kde_cursor_theme("Blue")
+
+    assert calls == [
+        ["kwriteconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme", "Blue"],
+        ["kreadconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorSize"],
+    ]
+    assert x_calls == []
+
+
+def test_set_kde_cursor_size_on_wayland_writes_config_without_live_apply(monkeypatch):
+    calls = []
+    x_calls = []
+    monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
+    monkeypatch.setenv("WAYLAND_DISPLAY", "wayland-0")
+    monkeypatch.setenv("DISPLAY", ":0")
+
+    def fake_which(name):
+        if name in {"kwriteconfig5", "kreadconfig5", "plasma-apply-cursortheme", "dbus-send"}:
+            return f"/usr/bin/{name}"
+        return None
+
+    def fake_run_cmd(command, **kwargs):
+        calls.append(command)
+        if command[0] == "kreadconfig5":
+            return "Blue\n"
+        return None
+
+    monkeypatch.setattr(kde.shutil, "which", fake_which)
+    monkeypatch.setattr(kde, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(kde, "apply_x_cursor_theme", lambda name, size=None: x_calls.append((name, size)))
+
+    kde.set_kde_cursor_size(32)
+
+    assert calls == [
+        ["kwriteconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorSize", "32"],
+        ["kreadconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme"],
+    ]
+    assert x_calls == []
 
 
 def test_get_kde_cursor_size_returns_none_for_invalid_value(monkeypatch):

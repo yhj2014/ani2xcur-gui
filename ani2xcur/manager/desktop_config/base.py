@@ -1,5 +1,6 @@
 """桌面环境配置"""
 
+import os
 from typing import NamedTuple
 
 
@@ -24,6 +25,23 @@ WINDOWS_CURSOR_BASE_SIZE_STEP = 16
 
 LINUX_CURSOR_SIZE_RANGE = IntRange(16, 96)
 """Linux 鼠标指针大小有效值范围"""
+
+
+def get_linux_session_type() -> str | None:
+    """获取当前 Linux 图形会话类型"""
+    session_type = os.environ.get("XDG_SESSION_TYPE", "").strip().casefold()
+    return session_type or None
+
+
+def is_wayland_session() -> bool:
+    """检测当前会话是否为 Wayland 或 Wayland + XWayland 环境"""
+    session_type = get_linux_session_type()
+    if session_type == "wayland":
+        return True
+    if session_type == "x11":
+        return False
+
+    return bool(os.environ.get("WAYLAND_DISPLAY")) and bool(os.environ.get("DISPLAY"))
 
 
 def check_windows_cursor_size_value(

@@ -13,6 +13,19 @@ from ctypes import c_int, c_char_p, c_ulong, c_void_p
 from ctypes.util import find_library
 from typing import Any
 
+from ani2xcur.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+)
+from ani2xcur.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
+
 _CURSOR_NAMES = (
     "left_ptr",
     "default",
@@ -85,11 +98,13 @@ _CURSOR_NAMES = (
 def _load_library(name: str) -> Any | None:
     library_path = find_library(name)
     if library_path is None:
+        logger.debug("未找到 Xcursor 刷新依赖库: '%s'", name)
         return None
 
     try:
         return ctypes.CDLL(library_path)
-    except OSError:
+    except OSError as e:
+        logger.debug("加载 Xcursor 刷新依赖库失败: '%s' -> '%s', 错误: %s", name, library_path, e)
         return None
 
 
@@ -116,12 +131,18 @@ def _configure_libraries(x11: Any, xcursor: Any, xfixes: Any) -> None:
 
 def _is_wayland_session() -> bool:
     session_type = os.environ.get("XDG_SESSION_TYPE", "").casefold()
+    wayland_display = os.environ.get("WAYLAND_DISPLAY")
+    display = os.environ.get("DISPLAY")
     if session_type == "wayland":
+        logger.debug("当前会话明确为 Wayland, 跳过 X11 鼠标指针刷新")
         return True
     if session_type == "x11":
         return False
 
-    return bool(os.environ.get("WAYLAND_DISPLAY")) and bool(os.environ.get("DISPLAY"))
+    is_wayland = bool(wayland_display) and bool(display)
+    if is_wayland:
+        logger.debug("会话类型未知但检测到 Wayland/XWayland 环境, 跳过 X11 鼠标指针刷新")
+    return is_wayland
 
 
 def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None) -> None:
@@ -131,22 +152,39 @@ def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None
         cursor_name (str | None): 要应用的鼠标指针主题名称
         cursor_size (int | None): 要应用的鼠标指针大小
     """
-    if sys.platform == "win32" or not os.environ.get("DISPLAY") or _is_wayland_session():
+    if sys.platform == "win32":
+        logger.debug("当前平台为 Windows, 跳过 X11 鼠标指针刷新")
+        return
+
+    display_name = os.environ.get("DISPLAY")
+    if not display_name:
+        logger.debug("环境变量 DISPLAY 为空, 跳过 X11 鼠标指针刷新")
+        return
+
+    if _is_wayland_session():
         return
 
     x11 = _load_library("X11")
     xcursor = _load_library("Xcursor")
     xfixes = _load_library("Xfixes")
     if x11 is None or xcursor is None or xfixes is None:
+        logger.debug(
+            "X11 鼠标指针刷新依赖库不完整, 跳过刷新: X11=%s, Xcursor=%s, Xfixes=%s",
+            x11 is not None,
+            xcursor is not None,
+            xfixes is not None,
+        )
         return
 
     try:
         _configure_libraries(x11, xcursor, xfixes)
-    except AttributeError:
+    except AttributeError as e:
+        logger.debug("配置 X11 / Xcursor / Xfixes 函数签名失败, 跳过刷新: %s", e)
         return
 
-    display = x11.XOpenDisplay(os.environ["DISPLAY"].encode("utf-8"))
+    display = x11.XOpenDisplay(display_name.encode("utf-8"))
     if not display:
+        logger.debug("打开 X11 display 失败, 跳过 X11 鼠标指针刷新: '%s'", display_name)
         return
 
     try:
@@ -155,12 +193,18 @@ def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None
         if cursor_size is not None:
             xcursor.XcursorSetDefaultSize(display, cursor_size)
 
+        changed_count = 0
+        missing_count = 0
         for cursor_shape in _CURSOR_NAMES:
             cursor = xcursor.XcursorLibraryLoadCursor(display, cursor_shape.encode("utf-8"))
             if cursor:
                 xfixes.XFixesChangeCursorByName(display, cursor, cursor_shape.encode("utf-8"))
                 x11.XFreeCursor(display, cursor)
+                changed_count += 1
+            else:
+                missing_count += 1
 
         x11.XFlush(display)
+        logger.debug("Xcursor 当前 X11 会话刷新完成: changed=%s, missing=%s", changed_count, missing_count)
     finally:
         x11.XCloseDisplay(display)

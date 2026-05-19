@@ -10,6 +10,7 @@ from pathlib import Path
 
 from ani2xcur.cmd import run_cmd
 from ani2xcur.utils import safe_convert_to_int
+from ani2xcur.manager.desktop_config.base import is_wayland_session
 from ani2xcur.manager.desktop_config import x_org
 from ani2xcur.manager.desktop_config.x_cursor import apply_x_cursor_theme
 
@@ -39,6 +40,9 @@ def _ensure_general_section(config: configparser.ConfigParser) -> None:
 
 
 def _merge_x_resources() -> None:
+    if is_wayland_session():
+        return
+
     if not shutil.which("xrdb") or not x_org.X_RESOURCES_PATH.is_file():
         return
 
@@ -46,6 +50,9 @@ def _merge_x_resources() -> None:
 
 
 def _refresh_root_cursor() -> None:
+    if is_wayland_session():
+        return
+
     if not shutil.which("xsetroot"):
         return
 
