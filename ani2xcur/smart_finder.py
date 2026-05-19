@@ -223,18 +223,17 @@ def find_inf_file(
             logger.debug("从 '%s' 下载文件时发生错误, 终止寻找: %s", input_file, e)
             return None
 
-    # 智能路径修正 (仅在首次调用且输入为本地光标文件时触发)
-    # 该目录可能为鼠标指针路径, 则尝试定位到其父文件夹
-    if is_toplevel and isinstance(input_file, Path) and input_file.is_file():
-        if input_file.name.lower().endswith((".ani", ".cur")):
-            input_file = input_file.parent
-
     # 文件系统逻辑处理
     try:
         # 确保 input_file 是 Path 对象
         abs_path = Path(input_file).resolve()
     except Exception:
         return None
+
+    # 智能路径修正 (仅在首次调用且输入为本地光标文件时触发)
+    # 该目录可能为鼠标指针路径, 则尝试定位到其父文件夹
+    if is_toplevel and abs_path.is_file() and abs_path.name.lower().endswith((".ani", ".cur")):
+        abs_path = abs_path.parent
 
     if not abs_path.exists() or abs_path in visited:
         return None

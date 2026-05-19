@@ -61,10 +61,9 @@ logger = get_logger(
 
 def install_cursor(
     input_path: Annotated[
-        Path,
+        str,
         typer.Argument(
-            help="鼠标指针文件的路径, 输入鼠标指针压缩包文件路径, 或者: Windows 平台中输入 inf / ani / cur 文件路径; Linux 平台输入 index.theme 文件路径",
-            resolve_path=True,
+            help="鼠标指针文件的本地路径或下载链接, 输入鼠标指针压缩包文件路径/链接, 或者: Windows 平台中输入 inf / ani / cur 文件路径; Linux 平台输入 index.theme 文件路径",
         ),
     ],
     install_path: Annotated[
@@ -84,7 +83,7 @@ def install_cursor(
     """将鼠标指针安装到系统中
     
     Args:
-        input_path: 鼠标指针配置文件、光标文件或压缩包路径
+        input_path: 鼠标指针配置文件、光标文件、压缩包路径或下载链接
         install_path: 自定义鼠标指针安装路径
         use_inf_config_path: Windows 平台是否使用 INF 中的安装路径
     Raises:

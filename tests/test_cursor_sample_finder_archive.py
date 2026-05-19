@@ -9,6 +9,7 @@ def test_find_inf_file_from_real_windows_sample_inputs(windows_cursor_dir: Path,
     assert find_inf_file(windows_inf_file, tmp_path, depth=0) == windows_inf_file.resolve()
     assert find_inf_file(windows_cursor_dir / "Arrow.cur", tmp_path, depth=1) == windows_inf_file.resolve()
     assert find_inf_file(windows_cursor_dir / "Wait.ani", tmp_path, depth=1) == windows_inf_file.resolve()
+    assert find_inf_file(str(windows_cursor_dir / "Arrow.cur"), tmp_path, depth=1) == windows_inf_file.resolve()
 
 
 def test_find_desktop_entry_file_from_real_linux_sample_inputs(linux_cursor_dir: Path, linux_theme_file: Path, tmp_path: Path):
