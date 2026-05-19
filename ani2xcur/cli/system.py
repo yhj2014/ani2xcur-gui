@@ -18,7 +18,6 @@ from ani2xcur.config import (
     LOGGER_COLOR,
     IMAGE_MAGICK_WINDOWS_DOWNLOAD_URL,
     ANI2XCUR_REPOSITORY_URL,
-    WIN2XCUR_REPOSITORY_URL,
     SMART_FINDER_SEARCH_DEPTH,
 )
 from ani2xcur.logger import get_logger
@@ -45,19 +44,12 @@ def update(
             help="Ani2xcur 源仓库的 Git 链接",
         ),
     ] = None,
-    win2xcur_source: Annotated[
-        str | None,
-        typer.Option(
-            help="Win2xcur 源仓库的 Git 链接",
-        ),
-    ] = None,
 ) -> None:
     """更新 Ani2xcur
     
     Args:
         install_from_source: 是否从源码安装更新
         ani2xcur_source: Ani2xcur 源仓库链接
-        win2xcur_source: Win2xcur 源仓库链接
     Raises:
         RuntimeError: 更新失败时
     """
@@ -65,7 +57,6 @@ def update(
         self_update(
             install_from_source=install_from_source,
             ani2xcur_source=ani2xcur_source,
-            win2xcur_source=win2xcur_source,
         )
     except RuntimeError as e:
         raise RuntimeError(
@@ -180,7 +171,6 @@ def env() -> None:
         {"key": "ANI2XCUR_LOGGER_COLOR", "var": LOGGER_COLOR},
         {"key": "IMAGE_MAGICK_WINDOWS_DOWNLOAD_URL", "var": IMAGE_MAGICK_WINDOWS_DOWNLOAD_URL},
         {"key": "ANI2XCUR_REPOSITORY_URL", "var": ANI2XCUR_REPOSITORY_URL},
-        {"key": "WIN2XCUR_REPOSITORY_URL", "var": WIN2XCUR_REPOSITORY_URL},
         {"key": "ANI2XCUR_SMART_FINDER_SEARCH_DEPTH", "var": SMART_FINDER_SEARCH_DEPTH},
     ]
 

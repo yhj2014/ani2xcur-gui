@@ -12,7 +12,7 @@ from ani2xcur.cursor_conversion.convert import (
     win_cursor_to_x11,
     x11_cursor_to_win,
 )
-from ani2xcur.cursor_conversion.win2xcur_warp import (
+from ani2xcur.cursor_conversion.native_cursor import (
     Win2xcurArgs,
     X2wincurArgs,
 )
@@ -31,7 +31,6 @@ from ani2xcur.file_operations.archive_manager import (
     create_archive,
     SUPPORTED_ARCHIVE_FORMAT,
 )
-from ani2xcur.manager.image_magick_manager import check_image_magick_is_installed
 from ani2xcur.utils import is_http_or_https
 from ani2xcur.manager.linux_cur_manager import install_linux_cursor
 from ani2xcur.manager.win_cur_manager import install_windows_cursor
@@ -157,11 +156,7 @@ def win2xcur(
         install_path: 自定义安装路径
     Raises:
         FileNotFoundError: 未找到需要的鼠标指针配置文件时
-        RuntimeError: 未安装 ImageMagick 时
     """
-    if not check_image_magick_is_installed():
-        raise RuntimeError("未安装 ImageMagick, 无法进行鼠标指针转换, 请使用 ani2xcur imagemagick install 命令进行安装")
-
     logger.info("将 '%s' 的 Windows 鼠标指针主题包转换为 Linux 鼠标指针主题包中", input_path)
 
     win2x_args: Win2xcurArgs = {
@@ -287,11 +282,7 @@ def x2wincur(
         install_path: 自定义安装路径
     Raises:
         FileNotFoundError: 未找到需要的鼠标指针配置文件或光标目录时
-        RuntimeError: 未安装 ImageMagick 时
     """
-    if not check_image_magick_is_installed():
-        raise RuntimeError("未安装 ImageMagick, 无法进行鼠标指针转换, 请使用 ani2xcur imagemagick install 命令进行安装")
-
     logger.info("将 '%s' 的 Linux 鼠标指针主题包转换为 Windows 鼠标指针主题包中", input_path)
     x2win_args: X2wincurArgs = {
         "scale": scale,

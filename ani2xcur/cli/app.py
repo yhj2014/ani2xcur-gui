@@ -50,7 +50,7 @@ def get_app() -> typer.Typer:
     Returns:
         typer.Typer: Ani2xcur 命令行应用
     """
-    app = typer_factory("鼠标指针转换、管理、和管理 ImageMagick 的命令行工具")
+    app = typer_factory("鼠标指针转换、管理和 ImageMagick 辅助管理的命令行工具")
     app.command(help="显示 Ani2xcur 和其他组件的当前版本", name="version")(version)
     app.command(help="更新 Ani2xcur", name="update")(update)
     app.command(help="列出 Ani2xcur 所使用的环境变量", name="env")(env)

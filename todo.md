@@ -1,0 +1,57 @@
+# Pillow Cursor Converter Refactor
+
+## Goal
+- Rewrite the cursor conversion core inside `ani2xcur` with Pillow.
+- Preserve both conversion directions: Windows `.cur/.ani` to Linux Xcursor, and Linux Xcursor to Windows `.cur/.ani`.
+- Remove the third-party `win2xcur` conversion dependency from runtime code and packaging metadata.
+- Keep Linux output as a standard Xcursor theme that works for X11 and Wayland/XWayland loaders.
+- Stop requiring ImageMagick for conversion while keeping the existing ImageMagick management commands available.
+
+## Done
+- Created `dev` branch for the refactor.
+- Chose the scope: dual-direction rewrite, Xcursor theme compatibility, no Hyprcursor output.
+- Decided that `todo.md` is tracked and the external reference `win2xcur/` directory is ignored.
+- Added the first native Pillow converter package with shared models, CUR/ANI/Xcursor parsers, Xcursor/CUR/ANI writers, scale, shadow, and public conversion entry points.
+- Switched conversion imports to the native converter, removed the old external converter wrapper, removed the package dependency on `win2xcur`, and removed conversion-time ImageMagick checks.
+- Added unit coverage for CUR PNG/DIB parsing, ANI parsing, Xcursor roundtrip, Windows writer roundtrip, scale, and shadow opacity.
+- Updated real-sample conversion tests to run without ImageMagick and read back generated cursor files with the native parser.
+- Updated README and update/system options so conversion is described as Pillow-based and no longer source-updates `win2xcur`.
+- Ran full validation: pytest, ruff, and ty all pass.
+
+## Todo
+- Parser:
+  - Done.
+- Writer:
+  - Done.
+- Image operations:
+  - Done.
+- Integration:
+  - Done.
+- Tests:
+  - Done.
+- Docs:
+  - Done.
+
+## Refactor Notes
+- CUR parsing must not rely on Pillow's default CUR loader alone because it only exposes one image size. The converter will read the CUR directory itself and decode each image payload individually.
+- Xcursor output follows the X.Org binary format: image chunks carry nominal size, actual size, hotspot, frame delay, and packed ARGB pixels.
+- Wayland compatibility is handled through standard Xcursor theme structure and cursor names, including existing aliases and `wayland-cursor` completion.
+- The existing CLI command names can stay as user-facing names, but code imports should no longer depend on the external `win2xcur` package.
+
+## Risks / Follow-ups
+- DIB/BMP cursor variants in the wild can be more varied than the current test fixtures. Initial support covers common uncompressed 24-bit and 32-bit variants.
+- Real KDE/Wayland cursor crashes still need separate investigation after conversion output is stable.
+- ImageMagick manager commands may become legacy functionality; keep them for now to avoid unrelated CLI removal.
+
+## References
+- Xcursor manual: https://www.x.org/archive/X11R7.5/doc/man/man3/Xcursor.3.html
+- xcursorgen manual: https://www.x.org/releases/X11R6.8.1/doc/xcursorgen.1.html
+- Freedesktop Icon Theme Specification: https://specifications.freedesktop.org/icon-theme/latest/
+- wayland-cursor CursorTheme docs: https://docs.rs/wayland-cursor/latest/wayland_cursor/struct.CursorTheme.html
+- Pillow image format docs: https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
+
+## Validation Log
+- `/root/micromamba/envs/py311/bin/python -m pytest tests/test_native_cursor_converter.py tests/test_cursor_conversion_samples.py tests/test_cli_convert_samples.py` -> 15 passed.
+- `/root/micromamba/envs/py311/bin/python -m ruff check .` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m ty check . --python /root/micromamba/envs/py311/bin/python` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m pytest` -> 67 passed.

@@ -4,8 +4,8 @@ import pytest
 
 from ani2xcur.config_parse.win import parse_inf_file_content
 from ani2xcur.cursor_conversion import convert as cursor_convert
+from ani2xcur.cursor_conversion.native_cursor.parsers import parse_blob
 from ani2xcur.manager.base import CURSOR_KEYS
-from ani2xcur.manager.image_magick_manager import check_image_magick_is_installed
 from ani2xcur.manager.win_cur_manager import extract_scheme_info_from_inf
 
 
@@ -74,23 +74,21 @@ def test_x11_cursor_to_win_uses_real_linux_sample(monkeypatch, linux_theme_file:
 
 @pytest.mark.integration
 def test_real_win_cursor_to_x11_conversion_smoke(windows_inf_file: Path, tmp_path: Path):
-    pytest.importorskip("win2xcur.parser", exc_type=ImportError)
-    if not check_image_magick_is_installed():
-        pytest.skip("未安装 ImageMagick")
-
     save_dir = cursor_convert.win_cursor_to_x11(windows_inf_file, tmp_path, {})
+    left_ptr = save_dir / "cursors" / "left_ptr"
 
-    assert (save_dir / "cursors" / "left_ptr").is_file()
+    assert left_ptr.is_file()
+    assert (save_dir / "cursors" / "default").exists()
+    assert (save_dir / "cursors" / "wayland-cursor").is_file()
     assert (save_dir / "cursor.theme").is_file()
+    assert parse_blob(left_ptr.read_bytes())[0].images[0].hotspot == (7, 4)
 
 
 @pytest.mark.integration
 def test_real_x11_cursor_to_win_conversion_smoke(linux_theme_file: Path, tmp_path: Path):
-    pytest.importorskip("win2xcur.parser", exc_type=ImportError)
-    if not check_image_magick_is_installed():
-        pytest.skip("未安装 ImageMagick")
-
     save_dir = cursor_convert.x11_cursor_to_win(linux_theme_file, tmp_path, {})
+    arrow_file = save_dir / "Arrow.cur"
 
     assert (save_dir / "AutoSetup.inf").is_file()
-    assert (save_dir / "Arrow.cur").is_file()
+    assert arrow_file.is_file()
+    assert parse_blob(arrow_file.read_bytes())[0].images[0].hotspot == (7, 4)

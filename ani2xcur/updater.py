@@ -10,7 +10,6 @@ from ani2xcur.config import (
     LOGGER_LEVEL,
     LOGGER_NAME,
     ANI2XCUR_REPOSITORY_URL,
-    WIN2XCUR_REPOSITORY_URL,
 )
 
 
@@ -24,7 +23,6 @@ logger = get_logger(
 def self_update(
     install_from_source: bool | None = False,
     ani2xcur_source: str | None = None,
-    win2xcur_source: str | None = None,
     enable_log: bool | None = True,
 ) -> None:
     """更新 Ani2xcur
@@ -32,7 +30,6 @@ def self_update(
     Args:
         install_from_source (bool | None): 是否从源码进行安装
         ani2xcur_source (str | None): Ani2xcur 源仓库的 Git 链接
-        win2xcur_source (str | None): win2xcur 源仓库的 Git 链接
         enable_log (bool | None): 是否显示更新日志
     Raises:
         RuntimeError: 更新失败时
@@ -41,12 +38,9 @@ def self_update(
     if ani2xcur_source is None:
         ani2xcur_source = ANI2XCUR_REPOSITORY_URL
 
-    if win2xcur_source is None:
-        win2xcur_source = WIN2XCUR_REPOSITORY_URL
-
     cmd = [Path(sys.executable).as_posix(), "-m", "pip", "install", "--upgrade"]
     if install_from_source:
-        cmd += [f"git+{ani2xcur_source}", f"git+{win2xcur_source}"]
+        cmd += [f"git+{ani2xcur_source}"]
     else:
         cmd += ["ani2xcur"]
 

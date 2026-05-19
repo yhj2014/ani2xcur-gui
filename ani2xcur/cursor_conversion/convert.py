@@ -24,7 +24,7 @@ from ani2xcur.config import (
     LOGGER_COLOR,
 )
 from ani2xcur.logger import get_logger
-from ani2xcur.cursor_conversion.win2xcur_warp import (
+from ani2xcur.cursor_conversion.native_cursor import (
     win2xcur_process,
     x2wincur_process,
     Win2xcurArgs,
@@ -52,7 +52,7 @@ def win_cursor_to_x11(
     Args:
         inf_file (Path): Windows 鼠标指针包中的 INF 文件路径
         output_path (Path): 导出路径
-        win2x_args (Win2xcurArgs): 传递给 win2xcur_process() 函数的参数
+        win2x_args (Win2xcurArgs): 传递给原生 Windows -> Xcursor 转换器的参数
     Returns:
         Path: Linux 的鼠标指针包的完整路径
     """
@@ -107,7 +107,7 @@ def win_cursor_to_x11(
             win2x_args["input_file"] = src
             win2x_args["output_path"] = cursors_dir
             win2x_args["save_name"] = name
-            logger.debug("调用 win2xcur 使用的参数: %s", win2x_args)
+            logger.debug("调用原生 Windows -> Xcursor 转换器使用的参数: %s", win2x_args)
             win2xcur_process(**win2x_args)
 
         # 补全鼠标指针文件
@@ -183,7 +183,7 @@ def x11_cursor_to_win(
     Args:
         desktop_entry_file (Path): Linux 鼠标指针包中的 DesktopEntry 文件路径
         output_path (Path): 导出路径
-        x2win_args (X2wincurArgs): 传递给 x2wincur_process() 函数的参数
+        x2win_args (X2wincurArgs): 传递给原生 Xcursor -> Windows 转换器的参数
     Returns:
         Path: Linux 的鼠标指针包的完整路径
     """
@@ -219,7 +219,7 @@ def x11_cursor_to_win(
             x2win_args["input_file"] = src
             x2win_args["output_path"] = cursors_dir
             x2win_args["save_name"] = name
-            logger.debug("调用 x2wincur 的参数: %s", x2win_args)
+            logger.debug("调用原生 Xcursor -> Windows 转换器的参数: %s", x2win_args)
             if src is not None:
                 cursor_save_path = x2wincur_process(**x2win_args)
             else:
