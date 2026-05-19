@@ -4,6 +4,7 @@ from ani2xcur.manager.desktop_config import x_cursor
 def test_apply_x_cursor_theme_skips_without_display(monkeypatch):
     load_calls = []
 
+    monkeypatch.setattr(x_cursor.sys, "platform", "linux")
     monkeypatch.delenv("DISPLAY", raising=False)
     monkeypatch.setattr(x_cursor, "_load_library", lambda name: load_calls.append(name))
 
@@ -15,6 +16,7 @@ def test_apply_x_cursor_theme_skips_without_display(monkeypatch):
 def test_apply_x_cursor_theme_skips_on_wayland_session(monkeypatch):
     load_calls = []
 
+    monkeypatch.setattr(x_cursor.sys, "platform", "linux")
     monkeypatch.setenv("DISPLAY", ":0")
     monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
     monkeypatch.setattr(x_cursor, "_load_library", lambda name: load_calls.append(name))
@@ -27,6 +29,7 @@ def test_apply_x_cursor_theme_skips_on_wayland_session(monkeypatch):
 def test_apply_x_cursor_theme_skips_on_wayland_display_without_session_type(monkeypatch):
     load_calls = []
 
+    monkeypatch.setattr(x_cursor.sys, "platform", "linux")
     monkeypatch.setenv("DISPLAY", ":0")
     monkeypatch.setenv("WAYLAND_DISPLAY", "wayland-0")
     monkeypatch.delenv("XDG_SESSION_TYPE", raising=False)
@@ -40,6 +43,7 @@ def test_apply_x_cursor_theme_skips_on_wayland_display_without_session_type(monk
 def test_apply_x_cursor_theme_uses_display_on_explicit_x11_session(monkeypatch):
     load_calls = []
 
+    monkeypatch.setattr(x_cursor.sys, "platform", "linux")
     monkeypatch.setenv("DISPLAY", ":0")
     monkeypatch.setenv("WAYLAND_DISPLAY", "wayland-0")
     monkeypatch.setenv("XDG_SESSION_TYPE", "x11")
