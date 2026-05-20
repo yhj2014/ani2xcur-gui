@@ -260,7 +260,7 @@ ani2xcur version
 
 
 # 使用的项目
-- [Pillow](https://python-pillow.org): 图像解码与处理。
+- [Pillow](https://python-pillow.github.io): 图像解码与处理。
 - [Breeze cursor](https://store.kde.org/p/999927): 鼠标指针补全文件。
 
 
