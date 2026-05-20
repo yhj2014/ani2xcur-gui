@@ -2,35 +2,35 @@
 
 不同平台下 subprocess 的执行结果不一致, 以下为不同平台的测试结果:
 ```
-Test Platform: linux
-Case 1: {'cmd': ['/usr/bin/git', '--version'], 'shell': False} -> Success
-Case 2: {'cmd': ['/usr/bin/git', '--version'], 'shell': True} -> Failed
-Case 3: {'cmd': '"/usr/bin/git" --version', 'shell': False} -> Failed
-Case 4: {'cmd': '"/usr/bin/git" --version', 'shell': True} -> Success
-Case 5: {'cmd': ['/usr/bin/git', '--version'], 'shell': False} -> Success
-Case 6: {'cmd': ['/usr/bin/git', '--version'], 'shell': True} -> Failed
-Case 7: {'cmd': '"/usr/bin/git" --version', 'shell': False} -> Failed
-Case 8: {'cmd': '"/usr/bin/git" --version', 'shell': True} -> Success
+	测试平台: linux
+	用例 1: {'cmd': ['/usr/bin/git', '--version'], 'shell': False} -> 成功
+	用例 2: {'cmd': ['/usr/bin/git', '--version'], 'shell': True} -> 失败
+	用例 3: {'cmd': '"/usr/bin/git" --version', 'shell': False} -> 失败
+	用例 4: {'cmd': '"/usr/bin/git" --version', 'shell': True} -> 成功
+	用例 5: {'cmd': ['/usr/bin/git', '--version'], 'shell': False} -> 成功
+	用例 6: {'cmd': ['/usr/bin/git', '--version'], 'shell': True} -> 失败
+	用例 7: {'cmd': '"/usr/bin/git" --version', 'shell': False} -> 失败
+	用例 8: {'cmd': '"/usr/bin/git" --version', 'shell': True} -> 成功
 
-Test Platform: win32
-Case 1: {'cmd': ['C:\\Program Files\\Git\\mingw64\\bin\\git.EXE', '--version'], 'shell': False} -> Success
-Case 2: {'cmd': ['C:\\Program Files\\Git\\mingw64\\bin\\git.EXE', '--version'], 'shell': True} -> Success
-Case 3: {'cmd': '"C:\\Program Files\\Git\\mingw64\\bin\\git.EXE" --version', 'shell': False} -> Success
-Case 4: {'cmd': '"C:\\Program Files\\Git\\mingw64\\bin\\git.EXE" --version', 'shell': True} -> Success
-Case 5: {'cmd': ['C:/Program Files/Git/mingw64/bin/git.EXE', '--version'], 'shell': False} -> Success
-Case 6: {'cmd': ['C:/Program Files/Git/mingw64/bin/git.EXE', '--version'], 'shell': True} -> Success
-Case 7: {'cmd': '"C:/Program Files/Git/mingw64/bin/git.EXE" --version', 'shell': False} -> Success
-Case 8: {'cmd': '"C:/Program Files/Git/mingw64/bin/git.EXE" --version', 'shell': True} -> Success
+	测试平台: win32
+	用例 1: {'cmd': ['C:\\Program Files\\Git\\mingw64\\bin\\git.EXE', '--version'], 'shell': False} -> 成功
+	用例 2: {'cmd': ['C:\\Program Files\\Git\\mingw64\\bin\\git.EXE', '--version'], 'shell': True} -> 成功
+	用例 3: {'cmd': '"C:\\Program Files\\Git\\mingw64\\bin\\git.EXE" --version', 'shell': False} -> 成功
+	用例 4: {'cmd': '"C:\\Program Files\\Git\\mingw64\\bin\\git.EXE" --version', 'shell': True} -> 成功
+	用例 5: {'cmd': ['C:/Program Files/Git/mingw64/bin/git.EXE', '--version'], 'shell': False} -> 成功
+	用例 6: {'cmd': ['C:/Program Files/Git/mingw64/bin/git.EXE', '--version'], 'shell': True} -> 成功
+	用例 7: {'cmd': '"C:/Program Files/Git/mingw64/bin/git.EXE" --version', 'shell': False} -> 成功
+	用例 8: {'cmd': '"C:/Program Files/Git/mingw64/bin/git.EXE" --version', 'shell': True} -> 成功
 
-Test Platform: darwin
-Case 1: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': False} -> Success
-Case 2: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': True} -> Failed
-Case 3: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': False} -> Failed
-Case 4: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': True} -> Success
-Case 5: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': False} -> Success
-Case 6: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': True} -> Failed
-Case 7: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': False} -> Failed
-Case 8: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': True} -> Success
+	测试平台: darwin
+	用例 1: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': False} -> 成功
+	用例 2: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': True} -> 失败
+	用例 3: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': False} -> 失败
+	用例 4: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': True} -> 成功
+	用例 5: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': False} -> 成功
+	用例 6: {'cmd': ['/opt/homebrew/bin/git', '--version'], 'shell': True} -> 失败
+	用例 7: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': False} -> 失败
+	用例 8: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': True} -> 成功
 ```
 
 - 对于 Linux 平台, 当使用 Shell=True 时, 应使用字符串命令; Shell=False 时, 使用列表命令
@@ -73,11 +73,11 @@ def preprocess_command(
         (list[str] | str): 处理后的命令
     """
     if sys.platform == "win32":
-        # Windows
+        # Windows 平台
         # 字符串命令和列表命令都可行
         return command
     else:
-        # Linux / MacOS
+        # Linux / macOS 平台
         if shell:
             # 使用字符串命令
             if isinstance(command, list):

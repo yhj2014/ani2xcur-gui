@@ -79,7 +79,12 @@ def _update_session_environment(cursor_name: str | None, cursor_size: int | None
 
 
 def refresh_lxqt_cursor_session(cursor_name: str | None, cursor_size: int | None) -> None:
-    """Refresh LXQt/Xcursor session state after cursor config files are written."""
+    """在光标配置文件写入后刷新 LXQt/Xcursor 会话状态。
+
+    Args:
+        cursor_name (str | None): 要应用的光标主题名称。
+        cursor_size (int | None): 要应用的光标大小。
+    """
     _merge_x_resources()
     _update_session_environment(cursor_name, cursor_size)
     apply_x_cursor_theme(cursor_name, cursor_size)

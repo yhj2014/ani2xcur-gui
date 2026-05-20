@@ -7,7 +7,7 @@ import logging
 
 
 class LoggingColoredFormatter(logging.Formatter):
-    """Logging 格式化类
+    """日志格式化类
 
     Attributes:
         color (bool): 是否启用日志颜色
@@ -15,12 +15,12 @@ class LoggingColoredFormatter(logging.Formatter):
     """
 
     COLORS = {
-        "DEBUG": "\033[0;36m",  # CYAN
-        "INFO": "\033[0;32m",  # GREEN
-        "WARNING": "\033[0;33m",  # YELLOW
-        "ERROR": "\033[0;31m",  # RED
-        "CRITICAL": "\033[0;37;41m",  # WHITE ON RED
-        "RESET": "\033[0m",  # RESET COLOR
+        "DEBUG": "\033[0;36m",  # 青色
+        "INFO": "\033[0;32m",  # 绿色
+        "WARNING": "\033[0;33m",  # 黄色
+        "ERROR": "\033[0;31m",  # 红色
+        "CRITICAL": "\033[0;37;41m",  # 红底白字
+        "RESET": "\033[0m",  # 重置颜色
     }
 
     def __init__(
@@ -29,7 +29,7 @@ class LoggingColoredFormatter(logging.Formatter):
         datefmt: str | None = None,
         color: bool | None = True,
     ) -> None:
-        """Logging 初始化
+        """初始化日志格式化器
 
         Args:
             fmt (str | None): 日志消息的格式字符串
@@ -58,14 +58,14 @@ def get_logger(
     level: int | None = logging.INFO,
     color: bool | None = True,
 ) -> logging.Logger:
-    """获取 Loging 对象
+    """获取日志对象
 
     Args:
-        name (str | None): Logging 名称
+        name (str | None): 日志名称
         level (int | None): 日志级别
         color (bool | None): 是否启用彩色日志
     Returns:
-        logging.Logger: Logging 对象
+        logging.Logger: 日志对象
     """
     if name is not None:
         log_format = "[%(name)s]-|%(asctime)s|-%(levelname)s: %(message)s"

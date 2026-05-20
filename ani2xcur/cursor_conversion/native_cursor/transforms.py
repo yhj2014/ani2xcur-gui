@@ -1,4 +1,4 @@
-"""Pillow image transforms used by cursor conversion."""
+"""光标转换使用的 Pillow 图像变换工具。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,14 @@ from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame
 
 
 def scale_frames(frames: list[CursorFrame], scale: float) -> None:
-    """Scale every cursor image and hotspot in-place."""
+    """原地缩放每个光标图像和热点坐标。
+
+    Args:
+        frames (list[CursorFrame]): 要缩放的光标帧列表。
+        scale (float): 缩放倍率。
+    Raises:
+        ValueError: 缩放倍率小于或等于 0 时抛出。
+    """
     if scale <= 0:
         raise ValueError("Cursor scale must be greater than zero")
 
@@ -39,7 +46,17 @@ def add_shadow_to_frames(
     xoffset: float,
     yoffset: float,
 ) -> None:
-    """Add a Windows-like drop shadow to every cursor image in-place."""
+    """为每个光标图像原地添加近似 Windows 风格的阴影。
+
+    Args:
+        frames (list[CursorFrame]): 要添加阴影的光标帧列表。
+        color (str): 阴影颜色。
+        opacity (int): 阴影不透明度。
+        radius (float): 阴影半径比例。
+        sigma (float): 阴影模糊比例。
+        xoffset (float): 阴影水平偏移比例。
+        yoffset (float): 阴影垂直偏移比例。
+    """
     opacity = max(0, min(255, opacity))
     for frame in frames:
         for cursor in frame.images:

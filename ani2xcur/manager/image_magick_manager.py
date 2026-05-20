@@ -449,31 +449,31 @@ def install_image_magick_linux() -> None:
     cmd: list[list[str]] = []
 
     if shutil.which("apt"):
-        # Debian / Ubuntu
+        # Debian / Ubuntu 系列
         logger.debug("匹配到 apt 包管理器")
         cmd.append(["apt", "update"])
         cmd.append(["apt", "install", "libmagickwand-dev", "-y"])
     elif shutil.which("yum"):
-        # CentOS / RHEL / Fedora
+        # CentOS / RHEL / Fedora 系列
         logger.debug("匹配到 yum 包管理器")
         cmd.append(["yum", "update"])
         cmd.append(["yum", "install", "ImageMagick-devel", "-y"])
     elif shutil.which("apk"):
-        # Alpine Linux
+        # Alpine Linux 系列
         logger.debug("匹配到 apk 包管理器")
         cmd.append(["apk", "update"])
         cmd.append(["apk", "add", "imagemagick"])
     elif shutil.which("pacman"):
-        # Arch Linux
+        # Arch Linux 系列
         logger.debug("匹配到 pacman 包管理器")
         cmd.append(["pacman", "-S", "imagemagick", "--noconfirm"])
     elif shutil.which("zypper"):
-        # openSUSE
+        # openSUSE 系列
         logger.debug("匹配到 zypper 包管理器")
         cmd.append(["zypper", "refresh"])
         cmd.append(["zypper", "install", "ImageMagick", "-y"])
     elif shutil.which("nix-env"):
-        # NixOS / Nix
+        # NixOS / Nix 系列
         logger.debug("匹配到 nix 包管理器")
         cmd.append(["nix-channel", "--update"])
         cmd.append(["nix-env", "-iA", "nixos.imagemagick"])
@@ -504,30 +504,30 @@ def uninstall_image_magick_linux() -> None:
     cmd: list[list[str]] = []
 
     if shutil.which("apt"):
-        # Debian / Ubuntu
+        # Debian / Ubuntu 系列
         logger.debug("匹配到 apt 包管理器")
         # 使用 purge 可以同时删除配置文件，如果只需删除程序可用 remove
         cmd.append(["apt", "purge", "libmagickwand-dev", "-y"])
         cmd.append(["apt", "autoremove", "-y"])
     elif shutil.which("yum"):
-        # CentOS / RHEL / Fedora
+        # CentOS / RHEL / Fedora 系列
         logger.debug("匹配到 yum 包管理器")
         cmd.append(["yum", "remove", "ImageMagick-devel", "-y"])
     elif shutil.which("apk"):
-        # Alpine Linux
+        # Alpine Linux 系列
         logger.debug("匹配到 apk 包管理器")
         cmd.append(["apk", "del", "imagemagick"])
     elif shutil.which("pacman"):
-        # Arch Linux
+        # Arch Linux 系列
         logger.debug("匹配到 pacman 包管理器")
         # -Rs 会同时删除该软件及其不再被需要的依赖
         cmd.append(["pacman", "-Rs", "imagemagick", "--noconfirm"])
     elif shutil.which("zypper"):
-        # openSUSE
+        # openSUSE 系列
         logger.debug("匹配到 zypper 包管理器")
         cmd.append(["zypper", "remove", "ImageMagick", "-y"])
     elif shutil.which("nix-env"):
-        # NixOS / Nix
+        # NixOS / Nix 系列
         logger.debug("匹配到 nix 包管理器")
         # 注意: nix-env 卸载时使用的是安装时的包名 (非属性路径 A)
         cmd.append(["nix-env", "-e", "imagemagick"])
@@ -629,8 +629,8 @@ def find_wand_library_paths() -> Generator[tuple[str | None, str | None], None, 
                 libmagick = ("libMagickCore{0}.dll".format(suffix),)  # pylint: disable=consider-using-f-string
                 yield magick_path(libwand), magick_path(libmagick)
 
-            elif system == "Darwin":  # MacOS
-                # 在 MacOS上, MagickWand 库通常也是 MagickCore 库
+            elif system == "Darwin":  # macOS 系统
+                # 在 macOS 上, MagickWand 库通常也是 MagickCore 库
                 libwand = (
                     "lib",
                     "libMagickWand{0}.dylib".format(suffix),  # pylint: disable=consider-using-f-string

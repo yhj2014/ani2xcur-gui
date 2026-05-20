@@ -175,7 +175,13 @@ Inherits={inherited_theme}
 
 
 def _linux_cursor_inherited_theme(cursor_name: str) -> str:
-    """Return a non-recursive fallback cursor theme name."""
+    """返回不会递归继承自身的回退光标主题名称。
+
+    Args:
+        cursor_name (str): 当前光标主题名称。
+    Returns:
+        str: 回退光标主题名称。
+    """
     if cursor_name.casefold() == "default":
         return "Adwaita"
     return "default"

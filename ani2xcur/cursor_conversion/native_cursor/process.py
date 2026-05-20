@@ -1,4 +1,4 @@
-"""Public conversion entry points for the native Pillow converter."""
+"""原生 Pillow 转换器的公开入口。"""
 
 from pathlib import Path
 from typing import TypedDict
@@ -32,7 +32,7 @@ logger = get_logger(
 
 
 class Win2xcurArgs(TypedDict, total=False):
-    """Arguments for Windows cursor to Xcursor conversion."""
+    """Windows 光标转换为 Xcursor 的参数。"""
 
     input_file: Path
     output_path: Path
@@ -60,7 +60,23 @@ def win2xcur_process(
     shadow_color: str | None = "#000000",
     scale: float | None = None,
 ) -> Path:
-    """Convert a Windows CUR/ANI cursor file to an Xcursor file."""
+    """将 Windows CUR/ANI 光标文件转换为 Xcursor 文件。
+
+    Args:
+        input_file (Path): 输入的 Windows 光标文件路径。
+        output_path (Path): 转换结果的输出目录。
+        save_name (str | None): 输出文件名, 为 None 时使用输入文件名。
+        shadow (bool | None): 是否添加阴影。
+        shadow_opacity (int | None): 阴影不透明度。
+        shadow_radius (float | None): 阴影半径比例。
+        shadow_sigma (float | None): 阴影模糊比例。
+        shadow_x (float | None): 阴影水平偏移比例。
+        shadow_y (float | None): 阴影垂直偏移比例。
+        shadow_color (str | None): 阴影颜色。
+        scale (float | None): 图像缩放倍率。
+    Returns:
+        Path: 转换后保存的 Xcursor 文件路径。
+    """
     if save_name is None:
         save_name = input_file.stem
 
@@ -84,7 +100,7 @@ def win2xcur_process(
 
 
 class X2wincurArgs(TypedDict, total=False):
-    """Arguments for Xcursor to Windows cursor conversion."""
+    """Xcursor 转换为 Windows 光标的参数。"""
 
     input_file: Path
     output_path: Path
@@ -98,7 +114,16 @@ def x2wincur_process(
     save_name: str | None = None,
     scale: float | None = None,
 ) -> Path:
-    """Convert an Xcursor/CUR/ANI cursor file to a Windows CUR/ANI file."""
+    """将 Xcursor/CUR/ANI 光标文件转换为 Windows CUR/ANI 文件。
+
+    Args:
+        input_file (Path): 输入的光标文件路径。
+        output_path (Path): 转换结果的输出目录。
+        save_name (str | None): 输出文件名, 为 None 时使用输入文件名。
+        scale (float | None): 图像缩放倍率。
+    Returns:
+        Path: 转换后保存的 Windows 光标文件路径。
+    """
     if save_name is None:
         save_name = input_file.stem
 

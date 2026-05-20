@@ -94,7 +94,12 @@ def _refresh_root_cursor(cursor_name: str | None, cursor_size: int | None) -> No
 
 
 def refresh_kde_cursor_session(cursor_name: str, cursor_size: int | None = None) -> None:
-    """Refresh KDE session cursor state after cursor config files are written."""
+    """在光标配置文件写入后刷新 KDE 会话中的光标状态。
+
+    Args:
+        cursor_name (str): 要应用的光标主题名称。
+        cursor_size (int | None): 要应用的光标大小。
+    """
     _apply_plasma_cursor_theme(cursor_name)
     _notify_kde_cursor_change()
     if is_wayland_session():

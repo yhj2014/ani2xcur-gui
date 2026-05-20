@@ -1,4 +1,4 @@
-"""Cursor file writers for Xcursor and Windows cursor formats."""
+"""Xcursor 与 Windows 光标格式写入工具。"""
 
 from __future__ import annotations
 
@@ -26,7 +26,15 @@ ANI_ICON_FLAG = 0x1
 
 
 def to_xcursor(frames: list[CursorFrame]) -> bytes:
-    """Serialize frames to an Xcursor file."""
+    """将光标帧序列化为 Xcursor 文件内容。
+
+    Args:
+        frames (list[CursorFrame]): 要写入的光标帧列表。
+    Returns:
+        bytes: Xcursor 文件的二进制内容。
+    Raises:
+        ValueError: 图像尺寸或热点坐标不符合 Xcursor 格式要求时抛出。
+    """
     chunks: list[tuple[int, int, bytes]] = []
     for frame in frames:
         for cursor in frame.images:
@@ -68,7 +76,15 @@ def to_xcursor(frames: list[CursorFrame]) -> bytes:
 
 
 def to_cur(frame: CursorFrame) -> bytes:
-    """Serialize a static frame to a Windows .cur file."""
+    """将静态光标帧序列化为 Windows .cur 文件内容。
+
+    Args:
+        frame (CursorFrame): 要写入的静态光标帧。
+    Returns:
+        bytes: .cur 文件的二进制内容。
+    Raises:
+        ValueError: 图像尺寸或热点坐标不符合 .cur 格式要求时抛出。
+    """
     header = ICON_DIR.pack(0, 2, len(frame.images))
     directory: list[bytes] = []
     image_data: list[bytes] = []
@@ -103,7 +119,13 @@ def to_cur(frame: CursorFrame) -> bytes:
 
 
 def to_ani(frames: list[CursorFrame]) -> bytes:
-    """Serialize animated frames to a Windows .ani file."""
+    """将动画光标帧序列化为 Windows .ani 文件内容。
+
+    Args:
+        frames (list[CursorFrame]): 要写入的动画光标帧列表。
+    Returns:
+        bytes: .ani 文件的二进制内容。
+    """
     rates = [_frame_delay_to_jiffies(frame.delay, animated=len(frames) > 1) for frame in frames]
     ani_header = ANIH_HEADER.pack(
         ANIH_HEADER.size,
@@ -132,7 +154,13 @@ def to_ani(frames: list[CursorFrame]) -> bytes:
 
 
 def to_smart(frames: list[CursorFrame]) -> tuple[str, bytes]:
-    """Choose .cur for static cursors and .ani for animated cursors."""
+    """根据帧数量自动选择 .cur 或 .ani 输出格式。
+
+    Args:
+        frames (list[CursorFrame]): 要写入的光标帧列表。
+    Returns:
+        tuple[str, bytes]: 输出扩展名和对应的二进制内容。
+    """
     if len(frames) == 1:
         return ".cur", to_cur(frames[0])
     return ".ani", to_ani(frames)

@@ -1,4 +1,4 @@
-"""Cursor file parsers backed by Pillow."""
+"""基于 Pillow 的光标文件解析器。"""
 
 from __future__ import annotations
 
@@ -31,7 +31,15 @@ ANI_ICON_FLAG = 0x1
 
 
 def parse_blob(blob: bytes) -> list[CursorFrame]:
-    """Parse a Windows CUR/ANI or Linux Xcursor blob."""
+    """解析 Windows CUR/ANI 或 Linux Xcursor 文件内容。
+
+    Args:
+        blob (bytes): 光标文件的二进制内容。
+    Returns:
+        list[CursorFrame]: 解析得到的光标帧列表。
+    Raises:
+        ValueError: 光标文件格式不受支持或文件内容损坏时抛出。
+    """
     if blob.startswith(CUR_MAGIC):
         return parse_cur(blob)
     if _is_ani(blob):
@@ -42,7 +50,15 @@ def parse_blob(blob: bytes) -> list[CursorFrame]:
 
 
 def parse_cur(blob: bytes) -> list[CursorFrame]:
-    """Parse a Windows .cur file into one static cursor frame."""
+    """将 Windows .cur 文件解析为静态光标帧。
+
+    Args:
+        blob (bytes): .cur 文件的二进制内容。
+    Returns:
+        list[CursorFrame]: 仅包含一个静态帧的光标帧列表。
+    Raises:
+        ValueError: .cur 文件内容损坏或格式不受支持时抛出。
+    """
     if len(blob) < ICON_DIR.size:
         raise ValueError("CUR file is too small")
 
@@ -82,7 +98,16 @@ def parse_cur(blob: bytes) -> list[CursorFrame]:
 
 
 def parse_ani(blob: bytes) -> list[CursorFrame]:
-    """Parse an icon-based Windows .ani file."""
+    """解析基于 icon 帧的 Windows .ani 文件。
+
+    Args:
+        blob (bytes): .ani 文件的二进制内容。
+    Returns:
+        list[CursorFrame]: 按动画顺序排列的光标帧列表。
+    Raises:
+        ValueError: .ani 文件内容损坏或格式不受支持时抛出。
+        NotImplementedError: .ani 文件使用暂不支持的原始 BMP 帧时抛出。
+    """
     if not _is_ani(blob):
         raise ValueError("Not an ANI file")
 
@@ -142,7 +167,15 @@ def parse_ani(blob: bytes) -> list[CursorFrame]:
 
 
 def parse_xcursor(blob: bytes) -> list[CursorFrame]:
-    """Parse an Xcursor file."""
+    """解析 Xcursor 文件。
+
+    Args:
+        blob (bytes): Xcursor 文件的二进制内容。
+    Returns:
+        list[CursorFrame]: 解析得到的光标帧列表。
+    Raises:
+        ValueError: Xcursor 文件内容损坏或格式不受支持时抛出。
+    """
     if len(blob) < XCURSOR_FILE_HEADER.size:
         raise ValueError("Xcursor file is too small")
 

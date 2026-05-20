@@ -32,7 +32,7 @@ class INFSection(TypedDict, total=False):
 
 
 ParsedINF: TypeAlias = dict[str, INFSection]  # pylint: disable=invalid-name
-"""parsed INF 的类型"""
+"""已解析 INF 的类型"""
 
 
 def parse_inf_text(

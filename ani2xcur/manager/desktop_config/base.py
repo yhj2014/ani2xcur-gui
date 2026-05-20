@@ -28,13 +28,21 @@ LINUX_CURSOR_SIZE_RANGE = IntRange(16, 96)
 
 
 def get_linux_session_type() -> str | None:
-    """获取当前 Linux 图形会话类型"""
+    """获取当前 Linux 图形会话类型。
+
+    Returns:
+        str | None: 当前图形会话类型, 无法获取时返回 None。
+    """
     session_type = os.environ.get("XDG_SESSION_TYPE", "").strip().casefold()
     return session_type or None
 
 
 def is_wayland_session() -> bool:
-    """检测当前会话是否为 Wayland 或 Wayland + XWayland 环境"""
+    """检测当前会话是否为 Wayland 或 Wayland + XWayland 环境。
+
+    Returns:
+        bool: 当前会话是 Wayland 或 Wayland + XWayland 环境时返回 True。
+    """
     session_type = get_linux_session_type()
     if session_type == "wayland":
         return True

@@ -244,7 +244,7 @@ class LinuxCursorsConfig(TypedDict, total=False):
 
 
 LINUX_CURSOR_LINKS = [
-    # left_ptr
+    # 普通选择: left_ptr
     ["left_ptr", "context-menu"],
     ["left_ptr", "grabbing"],
     ["left_ptr", "hand1"],
@@ -256,39 +256,39 @@ LINUX_CURSOR_LINKS = [
     ["left_ptr", "openhand"],
     ["left_ptr", "top_left_arrow"],
     ["left_ptr", "fcf21c00b30f7e3f83fe0dfd12e71cff"],
-    # left_ptr_watch
+    # 后台运行: left_ptr_watch
     ["left_ptr_watch", "progress"],
     ["left_ptr_watch", "00000000000000020006000e7e9ffc3f"],
     ["left_ptr_watch", "08e8e1c95fe2fc01f976f1e063a24ccd"],
     ["left_ptr_watch", "3ecb610c1bf2410f44200f48c40d3599"],
-    # right_ptr
+    # 个人选择: right_ptr
     ["right_ptr", "draft_large"],
     ["right_ptr", "draft_small"],
     ["right_ptr", "e-resize"],
-    # move
+    # 移动: move
     ["move", "all-scroll"],
     ["move", "fleur"],
     ["move", "size_all"],
     ["move", "4498f0e0c1937ffe01fd06f973665830"],
     ["move", "9081237383d90e509aa00f00170e968f"],
-    # question_arrow
+    # 帮助选择: question_arrow
     ["question_arrow", "dnd-ask"],
     ["question_arrow", "help"],
     ["question_arrow", "left_ptr_help"],
     ["question_arrow", "whats_this"],
     ["question_arrow", "5c6cd98b3f3ebcb1f9c7f1c204630408"],
     ["question_arrow", "d9ce0ab605698f320427677b458ad60b"],
-    # xterm
+    # 文本选择: xterm
     ["xterm", "ibeam"],
     ["xterm", "text"],
-    # wait
+    # 忙: wait
     ["wait", "watch"],
-    # hand2
+    # 链接选择: hand2
     ["hand2", "pointer"],
     ["hand2", "pointing_hand"],
     ["hand2", "9d800788f1b08800ae810202380a0822"],
     ["hand2", "e29285e634086352946a0e7090d73106"],
-    # pencil
+    # 手写: pencil
     ["pencil", "copy"],
     ["pencil", "dnd-copy"],
     ["pencil", "dnd-move"],
@@ -303,7 +303,7 @@ LINUX_CURSOR_LINKS = [
     ["pencil", "640fb0e74195791501fd1ed57b41487f"],
     ["pencil", "a2a266d0498c3104214a47bd64ab0fc8"],
     ["pencil", "b66166c04f8c3109214a4fbd64a50fc8"],
-    # circle
+    # 不可用: circle
     ["circle", "crossed_circle"],
     ["circle", "dnd_no_drop"],
     ["circle", "X_cursor"],
@@ -313,13 +313,13 @@ LINUX_CURSOR_LINKS = [
     ["circle", "not-allowed"],
     ["circle", "pirate"],
     ["circle", "03b6e0fcb3499374a867c041f52298f0"],
-    # cross
+    # 精确选择: cross
     ["cross", "crosshair"],
     ["cross", "tcross"],
     ["cross", "color-picker"],
     ["cross", "cross_reverse"],
     ["cross", "diamond_cross"],
-    # bottom_left_corner
+    # 左下/右上对角线缩放: bottom_left_corner
     ["bottom_left_corner", "fd_double_arrow"],
     ["bottom_left_corner", "ll_angle"],
     ["bottom_left_corner", "top_right_corner"],
@@ -329,7 +329,7 @@ LINUX_CURSOR_LINKS = [
     ["bottom_left_corner", "size_bdiag"],
     ["bottom_left_corner", "sw-resize"],
     ["bottom_left_corner", "fcf1c3c7cd4491d801f1e1c78f100000"],
-    # bottom_right_corner
+    # 右下/左上对角线缩放: bottom_right_corner
     ["bottom_right_corner", "bd_double_arrow"],
     ["bottom_right_corner", "lr_angle"],
     ["bottom_right_corner", "top_left_corner"],
@@ -339,7 +339,7 @@ LINUX_CURSOR_LINKS = [
     ["bottom_right_corner", "se-resize"],
     ["bottom_right_corner", "size_fdiag"],
     ["bottom_right_corner", "c7088f0f3e6c8088236ef8e1e3e70000"],
-    # bottom_side
+    # 垂直缩放: bottom_side
     ["bottom_side", "bottom_tee"],
     ["bottom_side", "plus"],
     ["bottom_side", "sb_down_arrow"],
@@ -359,7 +359,7 @@ LINUX_CURSOR_LINKS = [
     ["bottom_side", "size_ver"],
     ["bottom_side", "00008160000006810000408080010102"],
     ["bottom_side", "2870a09082c31050810ffdffffe0204"],
-    # left_side
+    # 水平缩放: left_side
     ["left_side", "left_tee"],
     ["left_side", "right_side"],
     ["left_side", "right_tee"],
@@ -379,7 +379,7 @@ LINUX_CURSOR_LINKS = [
     ["left_side", "size_hor"],
     ["left_side", "028006030e0e7ebffc7f7070c0600140"],
     ["left_side", "14fef782d02440884392942c1120523"],
-    # dotbox
+    # 候选: dotbox
     ["dotbox", "dot_box_mask"],
     ["dotbox", "draped_box"],
     ["dotbox", "icon"],
