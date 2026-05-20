@@ -69,71 +69,11 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install ImageMagick (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick libmagickwand-dev
-          if command -v magick >/dev/null 2>&1; then
-            magick -version
-          else
-            convert -version
-          fi
-
-      - name: Install ImageMagick (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-
-          if (-not (Get-Command magick -ErrorAction SilentlyContinue)) {
-            choco install imagemagick -y --no-progress
-          }
-
-          $magickHome = $null
-          $registryPath = "HKLM:\SOFTWARE\ImageMagick\Current"
-          if (Test-Path $registryPath) {
-            $props = Get-ItemProperty $registryPath
-            if ($props.BinPath) {
-              $magickHome = $props.BinPath
-            } elseif ($props.LibPath) {
-              $magickHome = $props.LibPath
-            } elseif ($props.ConfigurePath) {
-              $magickHome = $props.ConfigurePath
-            }
-          }
-
-          if (-not $magickHome) {
-            $candidates = @(
-              "$env:ProgramFiles\ImageMagick-*\magick.exe",
-              "$([Environment]::GetFolderPath('ProgramFilesX86'))\ImageMagick-*\magick.exe"
-            )
-            $magickExe = Get-ChildItem -Path $candidates -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($magickExe) {
-              $magickHome = $magickExe.DirectoryName
-            }
-          }
-
-          if (-not $magickHome) {
-            $magick = Get-Command magick -ErrorAction Stop
-            $magickHome = Split-Path -Parent $magick.Source
-          }
-
-          $env:MAGICK_HOME = $magickHome
-          $env:PATH = "$magickHome;$env:PATH"
-          "MAGICK_HOME=$magickHome" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          $magickHome | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-          & (Join-Path $magickHome "magick.exe") -version
-
       - name: Install test dependencies
         run: |
           uv venv
           uv pip install -e .
           uv pip install pytest
-
-      - name: Verify ImageMagick bindings
-        run: uv run python -c "from ani2xcur.manager.image_magick_manager import check_image_magick_is_installed; assert check_image_magick_is_installed()"
 
       - name: Run integration pytest
         run: uv run python -m pytest -m "integration and not wayland"
