@@ -5,6 +5,7 @@
 """
 
 import shutil
+import os
 
 from ani2xcur.cmd import run_cmd
 from ani2xcur.config import (
@@ -42,10 +43,6 @@ def _writeconfig_executable() -> str | None:
 
 
 def _apply_plasma_cursor_theme(cursor_name: str) -> None:
-    if is_wayland_session():
-        logger.debug("当前为 Wayland 会话, 跳过 plasma-apply-cursortheme 即时应用")
-        return
-
     executable = _which_first("plasma-apply-cursortheme")
     if executable is None:
         logger.debug("未找到 plasma-apply-cursortheme, 跳过 KDE 光标主题即时应用")
@@ -78,13 +75,59 @@ def _notify_kde_cursor_change() -> None:
     )
 
 
-def _refresh_current_session(cursor_name: str, cursor_size: int | None = None) -> None:
-    if is_wayland_session():
-        logger.debug("当前为 Wayland 会话, 跳过 KDE 当前会话即时刷新")
+def _reconfigure_kwin() -> None:
+    for executable in ("qdbus6", "qdbus-qt6", "qdbus", "qdbus-qt5"):
+        if shutil.which(executable):
+            command = [executable, "org.kde.KWin", "/KWin", "reconfigure"]
+            logger.debug("执行 KWin 重新加载配置命令: %s", command)
+            run_cmd(command, live=False, check=False)
+            return
+
+    dbus_send = shutil.which("dbus-send")
+    if not dbus_send:
+        logger.debug("未找到 qdbus/dbus-send, 跳过 KWin 重新加载配置")
         return
 
+    command = [
+        "dbus-send",
+        "--session",
+        "--dest=org.kde.KWin",
+        "--type=method_call",
+        "/KWin",
+        "org.kde.KWin.reconfigure",
+    ]
+    logger.debug("执行 KWin D-Bus 重新加载配置命令: %s", command)
+    run_cmd(command, live=False, check=False)
+
+
+def _refresh_root_cursor(cursor_name: str | None, cursor_size: int | None) -> None:
+    if not shutil.which("xsetroot"):
+        logger.debug("未找到 xsetroot, 跳过 X11 root 光标刷新")
+        return
+
+    custom_env = None
+    if cursor_name is not None or cursor_size is not None:
+        custom_env = os.environ.copy()
+        if cursor_name is not None:
+            custom_env["XCURSOR_THEME"] = cursor_name
+        if cursor_size is not None:
+            custom_env["XCURSOR_SIZE"] = str(cursor_size)
+
+    command = ["xsetroot", "-cursor_name", "left_ptr"]
+    logger.debug("执行 X11 root 光标刷新命令: %s", command)
+    run_cmd(command, custom_env=custom_env, live=False, check=False)
+
+
+def _refresh_current_session(cursor_name: str, cursor_size: int | None = None) -> None:
+    _apply_plasma_cursor_theme(cursor_name)
     _notify_kde_cursor_change()
+    _reconfigure_kwin()
+    if is_wayland_session():
+        logger.debug("当前为 Wayland 会话, 跳过 KDE X11-only 光标刷新")
+        return
+
     apply_x_cursor_theme(cursor_name, cursor_size)
+    _refresh_root_cursor(cursor_name, cursor_size)
 
 
 def get_kde_cursor_theme() -> str | None:
@@ -171,8 +214,6 @@ def set_kde_cursor_theme(
     Args:
         cursor_name (str): 要设置的鼠标指针配置名称
     """
-    _apply_plasma_cursor_theme(cursor_name)
-
     executable = _writeconfig_executable()
     if executable is not None:
         command = [executable, "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme", cursor_name]
@@ -212,7 +253,6 @@ def set_kde_cursor_size(
 
     cursor_name = get_kde_cursor_theme()
     if cursor_name is not None:
-        _apply_plasma_cursor_theme(cursor_name)
         _refresh_current_session(cursor_name, cursor_size)
     else:
         logger.debug("未读取到 KDE 当前光标主题, 跳过当前会话刷新")

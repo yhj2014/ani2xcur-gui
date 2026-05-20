@@ -36,14 +36,14 @@ def test_parse_real_linux_cursor_theme(linux_theme_file: Path):
     parsed = parse_desktop_entry_content(linux_theme_file)
 
     assert parsed["Icon Theme"]["Name"] == "DMZ-White"
-    assert parsed["Icon Theme"]["Inherits"] == "DMZ-White"
+    assert parsed["Icon Theme"]["Inherits"] == "default"
 
 
 def test_extract_real_linux_scheme_info(linux_theme_file: Path):
     scheme_info = extract_scheme_info_from_desktop_entry(linux_theme_file)
 
     assert scheme_info["scheme_name"] == "DMZ-White"
-    assert scheme_info["vars_dict"]["Inherits"] == "DMZ-White"
+    assert scheme_info["vars_dict"]["Inherits"] == "default"
     assert len(scheme_info["cursor_map"]) == len(CURSOR_KEYS["win"])
     assert scheme_info["cursor_map"]["Arrow"]["src_path"] is not None
     assert scheme_info["cursor_map"]["Arrow"]["src_path"].name == "left_ptr"

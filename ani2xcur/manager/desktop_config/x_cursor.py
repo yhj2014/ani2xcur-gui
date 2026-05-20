@@ -9,8 +9,10 @@
 import os
 import sys
 import ctypes
+from pathlib import Path
 from ctypes import c_int, c_char_p, c_ulong, c_void_p
 from ctypes.util import find_library
+from collections.abc import Iterator
 from typing import Any
 
 from ani2xcur.config import (
@@ -19,6 +21,12 @@ from ani2xcur.config import (
     LOGGER_NAME,
 )
 from ani2xcur.logger import get_logger
+from ani2xcur.manager.base import (
+    LINUX_CURSOR_KEYS,
+    LINUX_CURSOR_LINKS,
+    LINUX_ICONS_PATH,
+    LINUX_USER_ICONS_PATH,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -94,6 +102,12 @@ _CURSOR_NAMES = (
     "all-scroll",
 )
 
+_XCURSOR_THEME_PATHS = (
+    LINUX_USER_ICONS_PATH,
+    Path("~/.local/share/icons").expanduser(),
+    LINUX_ICONS_PATH,
+)
+
 
 def _load_library(name: str) -> Any | None:
     library_path = find_library(name)
@@ -143,6 +157,35 @@ def _is_wayland_session() -> bool:
     if is_wayland:
         logger.debug("会话类型未知但检测到 Wayland/XWayland 环境, 跳过 X11 鼠标指针刷新")
     return is_wayland
+
+
+def _iter_theme_cursor_names(cursor_name: str | None) -> Iterator[str]:
+    if cursor_name is None:
+        return
+
+    for theme_path in _XCURSOR_THEME_PATHS:
+        cursors_dir = theme_path / cursor_name / "cursors"
+        if not cursors_dir.is_dir():
+            continue
+
+        try:
+            for cursor_file in cursors_dir.iterdir():
+                if cursor_file.name.startswith("."):
+                    continue
+                if cursor_file.is_file() or cursor_file.is_symlink():
+                    yield cursor_file.name
+        except OSError as e:
+            logger.debug("读取 Xcursor 主题光标文件列表失败: '%s', 错误: %s", cursors_dir, e)
+
+
+def _iter_cursor_names(cursor_name: str | None) -> Iterator[str]:
+    seen: set[str] = set()
+    cursor_link_names = (name for pair in LINUX_CURSOR_LINKS for name in pair)
+    for name in (*_CURSOR_NAMES, *LINUX_CURSOR_KEYS, *cursor_link_names, *_iter_theme_cursor_names(cursor_name)):
+        if name in seen:
+            continue
+        seen.add(name)
+        yield name
 
 
 def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None) -> None:
@@ -195,7 +238,7 @@ def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None
 
         changed_count = 0
         missing_count = 0
-        for cursor_shape in _CURSOR_NAMES:
+        for cursor_shape in _iter_cursor_names(cursor_name):
             cursor = xcursor.XcursorLibraryLoadCursor(display, cursor_shape.encode("utf-8"))
             if cursor:
                 xfixes.XFixesChangeCursorByName(display, cursor, cursor_shape.encode("utf-8"))
