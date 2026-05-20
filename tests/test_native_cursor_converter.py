@@ -4,7 +4,13 @@ from PIL import Image
 
 from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame, CursorImage
 from ani2xcur.cursor_conversion.native_cursor.parsers import parse_blob
-from ani2xcur.cursor_conversion.native_cursor.transforms import add_shadow_to_frames, scale_frames
+from ani2xcur.cursor_conversion.native_cursor.process import win2xcur_process
+from ani2xcur.cursor_conversion.native_cursor.transforms import (
+    DEFAULT_XCURSOR_SIZES,
+    add_shadow_to_frames,
+    normalize_xcursor_sizes,
+    scale_frames,
+)
 from ani2xcur.cursor_conversion.native_cursor.writers import to_ani, to_cur, to_xcursor
 
 
@@ -91,6 +97,68 @@ def test_scale_frames_scales_images_and_hotspots():
 
     assert frames[0].images[0].image.size == (20, 16)
     assert frames[0].images[0].hotspot == (4, 6)
+
+
+def test_normalize_xcursor_sizes_expands_single_size_cursor():
+    frames = [CursorFrame([CursorImage(Image.new("RGBA", (10, 10), (0, 0, 0, 255)), (2, 3), 10)])]
+
+    normalize_xcursor_sizes(frames, [10, 20, 30])
+
+    assert [(image.image.size, image.hotspot, image.nominal) for image in frames[0].images] == [
+        ((10, 10), (2, 3), 10),
+        ((20, 20), (4, 6), 20),
+        ((30, 30), (6, 9), 30),
+    ]
+
+
+def test_normalize_xcursor_sizes_preserves_existing_images():
+    small = CursorImage(Image.new("RGBA", (16, 16), (255, 0, 0, 255)), (1, 2), 16)
+    large = CursorImage(Image.new("RGBA", (32, 32), (0, 0, 255, 255)), (2, 4), 32)
+    frames = [CursorFrame([small, large])]
+
+    normalize_xcursor_sizes(frames, [16, 24, 32])
+
+    assert frames[0].images[0] is small
+    assert frames[0].images[2] is large
+    assert [(image.image.size, image.hotspot, image.nominal) for image in frames[0].images] == [
+        ((16, 16), (1, 2), 16),
+        ((24, 24), (2, 3), 24),
+        ((32, 32), (2, 4), 32),
+    ]
+
+
+def test_normalize_xcursor_sizes_keeps_animation_delay():
+    frames = [
+        CursorFrame([CursorImage(Image.new("RGBA", (16, 16), (255, 0, 0, 255)), (3, 4), 16)], delay=0.1),
+        CursorFrame([CursorImage(Image.new("RGBA", (16, 16), (0, 0, 255, 255)), (5, 6), 16)], delay=0.2),
+    ]
+
+    normalize_xcursor_sizes(frames, [16, 32])
+
+    assert [frame.delay for frame in frames] == [0.1, 0.2]
+    assert [[image.nominal for image in frame.images] for frame in frames] == [[16, 32], [16, 32]]
+
+
+def test_scale_then_normalize_preserves_scaled_visual_size():
+    frames = [CursorFrame([CursorImage(Image.new("RGBA", (10, 10), (0, 0, 0, 255)), (2, 3), 10)])]
+
+    scale_frames(frames, scale=2)
+    normalize_xcursor_sizes(frames, [10, 20])
+
+    assert [(image.image.size, image.hotspot, image.nominal) for image in frames[0].images] == [
+        ((20, 20), (4, 6), 10),
+        ((40, 40), (8, 12), 20),
+    ]
+
+
+def test_win2xcur_process_synthesizes_default_sizes_from_single_size_cur(tmp_path):
+    input_file = tmp_path / "single.cur"
+    input_file.write_bytes(to_cur(CursorFrame([CursorImage(Image.new("RGBA", (16, 16), (0, 0, 0, 255)), (4, 5), 16)])))
+
+    output_file = win2xcur_process(input_file, tmp_path)
+
+    frames = parse_blob(output_file.read_bytes())
+    assert [image.nominal for image in frames[0].images] == list(DEFAULT_XCURSOR_SIZES)
 
 
 def test_shadow_uses_requested_opacity():

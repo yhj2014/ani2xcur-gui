@@ -20,6 +20,7 @@
 - Added a libwayland-cursor verifier tool under `tests/tools/` and a headless Weston integration test for generated Xcursor themes.
 - Found that generated themes inherited themselves (`Inherits=<theme>`), which can make `wl_cursor_theme_load()` hang; switched generated fallback inheritance to a non-recursive theme.
 - Added a dedicated GitHub Actions Wayland loader job that installs Weston/libwayland and runs the `wayland` marker tests.
+- Added file-level Xcursor size normalization so Windows -> Linux conversion writes standard nominal sizes by default and desktop environments can expose cursor size choices.
 
 ## Todo
 - Parser:
@@ -40,6 +41,8 @@
 - Xcursor output follows the X.Org binary format: image chunks carry nominal size, actual size, hotspot, frame delay, and packed ARGB pixels.
 - Wayland compatibility is handled through standard Xcursor theme structure and cursor names, including existing aliases and `wayland-cursor` completion.
 - The existing CLI command names can stay as user-facing names, but code imports should no longer depend on the external `win2xcur` package.
+- Xcursor size switching is handled inside each real cursor file, not through `index.theme` or `cursor.theme`; generated themes default to `24, 28, 32, 40, 48, 56, 64, 72, 80`, and `--xcursor-size` can override that list.
+- Missing Xcursor sizes are synthesized from the nearest available nominal size with Pillow Lanczos resizing, while hotspots are scaled with the same ratio.
 
 ## Risks / Follow-ups
 - DIB/BMP cursor variants in the wild can be more varied than the current test fixtures. Initial support covers common uncompressed 24-bit and 32-bit variants.
@@ -47,6 +50,7 @@
 - Wayland loader CI coverage depends on system packages: `weston`, `pkg-config`, `cc`, and `libwayland-dev`. The test skips when those are unavailable.
 - The dedicated CI job sets `ANI2XCUR_REQUIRE_WAYLAND_TEST=1`, so missing Wayland test dependencies fail there instead of skipping.
 - ImageMagick manager commands may become legacy functionality; keep them for now to avoid unrelated CLI removal.
+- Real desktop size menus should still be checked manually across KDE/GNOME/XFCE/LXQt because each shell may cache cursor themes differently.
 
 ## References
 - Xcursor manual: https://www.x.org/archive/X11R7.5/doc/man/man3/Xcursor.3.html
@@ -65,6 +69,11 @@
 - `/root/micromamba/envs/py311/bin/python -m ruff check .` -> passed.
 - `/root/micromamba/envs/py311/bin/python -m ty check . --python /root/micromamba/envs/py311/bin/python` -> passed.
 - `/root/micromamba/envs/py311/bin/python -m pytest` -> 68 passed.
+- `/root/micromamba/envs/py311/bin/python -m pytest tests/test_native_cursor_converter.py tests/test_cursor_conversion_samples.py tests/test_cli_convert_samples.py -q` -> 21 passed.
+- `/root/micromamba/envs/py311/bin/python -m ruff check .` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m ty check . --python /root/micromamba/envs/py311/bin/python` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m python_docstring_checker ani2xcur` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m pytest` -> 79 passed.
 - `ANI2XCUR_REQUIRE_WAYLAND_TEST=1 /root/micromamba/envs/py311/bin/python -m pytest -m wayland -q` -> 1 passed, 67 deselected.
 - `/root/micromamba/envs/py311/bin/python -m ruff check .` -> passed.
 - `/root/micromamba/envs/py311/bin/python -m ty check . --python /root/micromamba/envs/py311/bin/python` -> passed.

@@ -45,29 +45,35 @@ def test_generated_xcursor_theme_loads_with_libwayland_cursor(windows_inf_file: 
         text=True,
     )
 
+    results: dict[int, subprocess.CompletedProcess[str]] = {}
     try:
         _wait_for_wayland_socket(weston, xdg_runtime_dir / socket_name)
 
         verifier_env = weston_env.copy()
         verifier_env["WAYLAND_DISPLAY"] = socket_name
         verifier_env["XCURSOR_PATH"] = str(tmp_path)
-        result = subprocess.run(
-            [str(verifier), "DMZ-White", "32"],
-            env=verifier_env,
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
+        results = {
+            size: subprocess.run(
+                [str(verifier), "DMZ-White", str(size), str(size)],
+                env=verifier_env,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+            for size in [24, 32, 48, 64, 80]
+        }
     finally:
         _stop_process(weston)
 
-    output = result.stdout + result.stderr
-    assert result.returncode == 0, output
-    assert "OK left_ptr images=" in output
-    assert "OK default images=" in output
-    assert "OK wayland-cursor images=" in output
-    assert "OK watch images=23" in output
+    for size, result in results.items():
+        output = result.stdout + result.stderr
+        assert result.returncode == 0, f"size={size}\n{output}"
+        assert "OK left_ptr images=" in output
+        assert "OK default images=" in output
+        assert "OK wayland-cursor images=" in output
+        assert "OK watch images=23" in output
+        assert "SIZE_MISMATCH" not in output
 
 
 def _compile_wayland_cursor_verifier(tmp_path: Path) -> Path:

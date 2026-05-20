@@ -30,6 +30,12 @@ from ani2xcur.cursor_conversion.native_cursor import (
     Win2xcurArgs,
     X2wincurArgs,
 )
+from ani2xcur.cursor_conversion.native_cursor.parsers import parse_blob
+from ani2xcur.cursor_conversion.native_cursor.transforms import (
+    DEFAULT_XCURSOR_SIZES,
+    normalize_xcursor_sizes,
+)
+from ani2xcur.cursor_conversion.native_cursor.writers import to_xcursor
 from ani2xcur.file_operations.file_manager import (
     copy_files,
     save_create_symlink,
@@ -124,6 +130,8 @@ def win_cursor_to_x11(
 
         os.chdir(current_path)
 
+        _normalize_xcursor_theme_files(cursors_dir, win2x_args.get("xcursor_sizes"))
+
         # 创建配置文件
         generate_linux_cursor_config(
             cursor_name=cursor_name,
@@ -185,6 +193,31 @@ def _linux_cursor_inherited_theme(cursor_name: str) -> str:
     if cursor_name.casefold() == "default":
         return "Adwaita"
     return "default"
+
+
+def _normalize_xcursor_theme_files(
+    cursors_dir: Path,
+    xcursor_sizes: list[int] | None,
+) -> None:
+    """补齐主题目录中真实 Xcursor 文件的名义尺寸列表。
+
+    Args:
+        cursors_dir (Path): Xcursor 主题的 cursors 目录。
+        xcursor_sizes (list[int] | None): 目标名义尺寸列表。
+    """
+    target_sizes = DEFAULT_XCURSOR_SIZES if xcursor_sizes is None else xcursor_sizes
+    for cursor_file in cursors_dir.iterdir():
+        if cursor_file.is_symlink() or not cursor_file.is_file():
+            continue
+
+        try:
+            frames = parse_blob(cursor_file.read_bytes())
+            normalize_xcursor_sizes(frames, target_sizes)
+        except ValueError as e:
+            logger.debug("跳过无法补齐尺寸的光标文件: '%s', 原因: %s", cursor_file, e)
+            continue
+
+        cursor_file.write_bytes(to_xcursor(frames))
 
 
 def x11_cursor_to_win(

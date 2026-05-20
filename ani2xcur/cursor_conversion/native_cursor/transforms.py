@@ -6,7 +6,10 @@ from math import ceil
 
 from PIL import Image, ImageColor, ImageFilter
 
-from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame
+from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame, CursorImage
+
+DEFAULT_XCURSOR_SIZES = (24, 28, 32, 40, 48, 56, 64, 72, 80)
+"""转换到 Linux Xcursor 主题时默认生成的名义尺寸列表。"""
 
 
 def scale_frames(frames: list[CursorFrame], scale: float) -> None:
@@ -34,6 +37,41 @@ def scale_frames(frames: list[CursorFrame], scale: float) -> None:
                 max(0, int(round(hotspot_x * scale))),
                 max(0, int(round(hotspot_y * scale))),
             )
+
+
+def normalize_xcursor_sizes(
+    frames: list[CursorFrame],
+    target_sizes: list[int] | tuple[int, ...],
+) -> None:
+    """原地补齐 Xcursor 文件需要提供的名义尺寸。
+
+    Args:
+        frames (list[CursorFrame]): 要补齐尺寸的光标帧列表。
+        target_sizes (list[int] | tuple[int, ...]): 目标名义尺寸列表。
+    Raises:
+        ValueError: 目标尺寸为空或包含非法值时抛出。
+    """
+    sizes = sorted(set(target_sizes))
+    if not sizes:
+        raise ValueError("Xcursor size list must not be empty")
+    if any(size <= 0 for size in sizes):
+        raise ValueError("Xcursor sizes must be greater than zero")
+
+    for frame in frames:
+        if not frame.images:
+            continue
+
+        existing_by_nominal = {cursor.nominal: cursor for cursor in frame.images}
+        normalized_images: list[CursorImage] = []
+        for target_size in sizes:
+            if target_size in existing_by_nominal:
+                normalized_images.append(existing_by_nominal[target_size])
+                continue
+
+            source = _nearest_cursor_image(frame.images, target_size)
+            normalized_images.append(_resize_cursor_image(source, target_size))
+
+        frame.images = normalized_images
 
 
 def add_shadow_to_frames(
@@ -125,3 +163,34 @@ def _add_shadow_to_image(
     hotspot_x = max(0, min(cropped.width, hotspot_x))
     hotspot_y = max(0, min(cropped.height, hotspot_y))
     return cropped, (hotspot_x, hotspot_y)
+
+
+def _nearest_cursor_image(
+    images: list[CursorImage],
+    target_size: int,
+) -> CursorImage:
+    return min(images, key=lambda image: (abs(image.nominal - target_size), -image.nominal))
+
+
+def _resize_cursor_image(
+    source: CursorImage,
+    target_size: int,
+) -> CursorImage:
+    image = source.image.convert("RGBA")
+    width, height = image.size
+    source_nominal = source.nominal if source.nominal > 0 else max(width, height)
+    scale = target_size / source_nominal
+    new_size = (
+        max(1, int(round(width * scale))),
+        max(1, int(round(height * scale))),
+    )
+    hotspot_x, hotspot_y = source.hotspot
+    new_hotspot = (
+        max(0, min(new_size[0], int(round(hotspot_x * scale)))),
+        max(0, min(new_size[1], int(round(hotspot_y * scale)))),
+    )
+    return CursorImage(
+        image=image.resize(new_size, Image.Resampling.LANCZOS),
+        hotspot=new_hotspot,
+        nominal=target_size,
+    )

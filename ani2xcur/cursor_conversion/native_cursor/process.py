@@ -11,7 +11,9 @@ from ani2xcur.config import (
 )
 from ani2xcur.cursor_conversion.native_cursor.parsers import parse_blob
 from ani2xcur.cursor_conversion.native_cursor.transforms import (
+    DEFAULT_XCURSOR_SIZES,
     add_shadow_to_frames,
+    normalize_xcursor_sizes,
     scale_frames,
 )
 from ani2xcur.cursor_conversion.native_cursor.writers import (
@@ -45,6 +47,7 @@ class Win2xcurArgs(TypedDict, total=False):
     shadow_y: float | None
     shadow_color: str | None
     scale: float | None
+    xcursor_sizes: list[int] | None
 
 
 def win2xcur_process(
@@ -59,6 +62,7 @@ def win2xcur_process(
     shadow_y: float | None = 0.05,
     shadow_color: str | None = "#000000",
     scale: float | None = None,
+    xcursor_sizes: list[int] | None = None,
 ) -> Path:
     """将 Windows CUR/ANI 光标文件转换为 Xcursor 文件。
 
@@ -74,6 +78,7 @@ def win2xcur_process(
         shadow_y (float | None): 阴影垂直偏移比例。
         shadow_color (str | None): 阴影颜色。
         scale (float | None): 图像缩放倍率。
+        xcursor_sizes (list[int] | None): 要写入的 Xcursor 名义尺寸列表。
     Returns:
         Path: 转换后保存的 Xcursor 文件路径。
     """
@@ -93,6 +98,7 @@ def win2xcur_process(
             xoffset=0.05 if shadow_x is None else shadow_x,
             yoffset=0.05 if shadow_y is None else shadow_y,
         )
+    normalize_xcursor_sizes(frames, DEFAULT_XCURSOR_SIZES if xcursor_sizes is None else xcursor_sizes)
 
     output_file = output_path / save_name
     save_bytes_to_file(to_xcursor(frames), output_file)

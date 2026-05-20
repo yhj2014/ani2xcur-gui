@@ -28,6 +28,21 @@ def test_win2xcur_cli_converts_real_sample_without_installing(monkeypatch, windo
     assert (tmp_path / "DMZ-White" / "cursors" / "left_ptr").is_file()
 
 
+def test_win2xcur_cli_passes_custom_xcursor_sizes(monkeypatch, windows_cursor_dir: Path, tmp_path: Path):
+    seen_sizes: list[list[int] | None] = []
+
+    def fake_win2xcur_process(input_file: Path, output_path: Path, save_name: str | None = None, **kwargs):
+        seen_sizes.append(kwargs.get("xcursor_sizes"))
+        return _fake_win2xcur_process(input_file, output_path, save_name, **kwargs)
+
+    monkeypatch.setattr(cursor_convert, "win2xcur_process", fake_win2xcur_process)
+
+    cli_convert.win2xcur(str(windows_cursor_dir), output_path=tmp_path, xcursor_sizes=[32, 64], install=False)
+
+    assert seen_sizes
+    assert all(size == [32, 64] for size in seen_sizes)
+
+
 def test_x2wincur_cli_converts_real_sample_without_installing(monkeypatch, linux_theme_file: Path, tmp_path: Path):
     monkeypatch.setattr(cursor_convert, "x2wincur_process", _fake_x2wincur_process)
 

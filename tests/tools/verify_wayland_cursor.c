@@ -27,9 +27,14 @@ static const struct wl_registry_listener registry_listener = {
     registry_remove,
 };
 
+static int should_check_exact_size(const char *name) {
+    return strcmp(name, "left_ptr") == 0 || strcmp(name, "default") == 0 || strcmp(name, "watch") == 0;
+}
+
 int main(int argc, char **argv) {
     const char *theme_name = argc > 1 ? argv[1] : NULL;
     int size = argc > 2 ? atoi(argv[2]) : 32;
+    int expected_size = argc > 3 ? atoi(argv[3]) : 0;
     const char *names[] = {
         "left_ptr",
         "default",
@@ -86,6 +91,7 @@ int main(int argc, char **argv) {
         }
 
         printf("OK %s images=%u\n", names[i], cursor->image_count);
+        int found_expected_size = expected_size <= 0 || !should_check_exact_size(names[i]);
         for (uint32_t j = 0; j < cursor->image_count; j++) {
             struct wl_cursor_image *image = cursor->images[j];
             struct wl_buffer *buffer = wl_cursor_image_get_buffer(image);
@@ -104,6 +110,14 @@ int main(int argc, char **argv) {
                 image->hotspot_y,
                 image->delay
             );
+            if ((uint32_t)expected_size == image->width && (uint32_t)expected_size == image->height) {
+                found_expected_size = 1;
+            }
+        }
+
+        if (!found_expected_size) {
+            printf("  SIZE_MISMATCH expected=%d\n", expected_size);
+            failed = 1;
         }
     }
 

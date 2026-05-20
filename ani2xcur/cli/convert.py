@@ -110,6 +110,14 @@ def win2xcur(
             help="按指定倍数缩放光标",
         ),
     ] = None,
+    xcursor_sizes: Annotated[
+        list[int] | None,
+        typer.Option(
+            "--xcursor-size",
+            help="转换为 Linux Xcursor 时写入的名义尺寸, 可重复传入；不传则使用默认尺寸列表",
+            min=1,
+        ),
+    ] = None,
     compress: Annotated[
         bool,
         typer.Option(
@@ -150,6 +158,7 @@ def win2xcur(
         shadow_y: 阴影 y 偏移量
         shadow_color: 阴影颜色
         scale: 光标缩放倍数
+        xcursor_sizes: 转换为 Linux Xcursor 时写入的名义尺寸列表
         compress: 是否在转换后打包
         compress_format: 压缩包格式
         install: 是否在转换完成后安装
@@ -168,6 +177,7 @@ def win2xcur(
         "shadow_y": shadow_y,
         "shadow_color": shadow_color,
         "scale": scale,
+        "xcursor_sizes": xcursor_sizes,
     }
 
     if output_path is None:

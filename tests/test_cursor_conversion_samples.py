@@ -5,6 +5,7 @@ import pytest
 from ani2xcur.config_parse.win import parse_inf_file_content
 from ani2xcur.cursor_conversion import convert as cursor_convert
 from ani2xcur.cursor_conversion.native_cursor.parsers import parse_blob
+from ani2xcur.cursor_conversion.native_cursor.transforms import DEFAULT_XCURSOR_SIZES
 from ani2xcur.manager.base import CURSOR_KEYS
 from ani2xcur.manager.win_cur_manager import extract_scheme_info_from_inf
 
@@ -77,12 +78,19 @@ def test_x11_cursor_to_win_uses_real_linux_sample(monkeypatch, linux_theme_file:
 def test_real_win_cursor_to_x11_conversion_smoke(windows_inf_file: Path, tmp_path: Path):
     save_dir = cursor_convert.win_cursor_to_x11(windows_inf_file, tmp_path, {})
     left_ptr = save_dir / "cursors" / "left_ptr"
+    cursors_dir = save_dir / "cursors"
 
     assert left_ptr.is_file()
-    assert (save_dir / "cursors" / "default").exists()
-    assert (save_dir / "cursors" / "wayland-cursor").is_file()
+    assert (cursors_dir / "default").exists()
+    assert (cursors_dir / "wayland-cursor").is_file()
     assert (save_dir / "cursor.theme").is_file()
     assert parse_blob(left_ptr.read_bytes())[0].images[0].hotspot == (7, 4)
+
+    for cursor_file in cursors_dir.iterdir():
+        if cursor_file.is_symlink() or not cursor_file.is_file():
+            continue
+        frames = parse_blob(cursor_file.read_bytes())
+        assert sorted({image.nominal for frame in frames for image in frame.images}) == list(DEFAULT_XCURSOR_SIZES)
 
 
 @pytest.mark.integration
