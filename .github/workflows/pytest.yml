@@ -136,4 +136,40 @@ jobs:
         run: uv run python -c "from ani2xcur.manager.image_magick_manager import check_image_magick_is_installed; assert check_image_magick_is_installed()"
 
       - name: Run integration pytest
-        run: uv run python -m pytest -m integration
+        run: uv run python -m pytest -m "integration and not wayland"
+
+  wayland-loader:
+    name: Wayland cursor loader / Ubuntu / Python 3.12
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Wayland test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config weston libwayland-dev
+          weston --version
+          pkg-config --modversion wayland-client wayland-cursor
+
+      - name: Install test dependencies
+        run: |
+          uv venv
+          uv pip install -e .
+          uv pip install pytest
+
+      - name: Run Wayland cursor loader pytest
+        env:
+          ANI2XCUR_REQUIRE_WAYLAND_TEST: "1"
+        run: uv run python -m pytest -m wayland -q

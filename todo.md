@@ -17,6 +17,9 @@
 - Updated real-sample conversion tests to run without ImageMagick and read back generated cursor files with the native parser.
 - Updated README and update/system options so conversion is described as Pillow-based and no longer source-updates `win2xcur`.
 - Ran full validation: pytest, ruff, and ty all pass.
+- Added a libwayland-cursor verifier tool under `tests/tools/` and a headless Weston integration test for generated Xcursor themes.
+- Found that generated themes inherited themselves (`Inherits=<theme>`), which can make `wl_cursor_theme_load()` hang; switched generated fallback inheritance to a non-recursive theme.
+- Added a dedicated GitHub Actions Wayland loader job that installs Weston/libwayland and runs the `wayland` marker tests.
 
 ## Todo
 - Parser:
@@ -41,6 +44,8 @@
 ## Risks / Follow-ups
 - DIB/BMP cursor variants in the wild can be more varied than the current test fixtures. Initial support covers common uncompressed 24-bit and 32-bit variants.
 - Real KDE/Wayland cursor crashes still need separate investigation after conversion output is stable.
+- Wayland loader CI coverage depends on system packages: `weston`, `pkg-config`, `cc`, and `libwayland-dev`. The test skips when those are unavailable.
+- The dedicated CI job sets `ANI2XCUR_REQUIRE_WAYLAND_TEST=1`, so missing Wayland test dependencies fail there instead of skipping.
 - ImageMagick manager commands may become legacy functionality; keep them for now to avoid unrelated CLI removal.
 
 ## References
@@ -55,3 +60,12 @@
 - `/root/micromamba/envs/py311/bin/python -m ruff check .` -> passed.
 - `/root/micromamba/envs/py311/bin/python -m ty check . --python /root/micromamba/envs/py311/bin/python` -> passed.
 - `/root/micromamba/envs/py311/bin/python -m pytest` -> 67 passed.
+- `/root/micromamba/envs/py311/bin/python -m pytest tests/test_wayland_cursor_loader.py -q` -> 1 passed; headless Weston + libwayland-cursor loaded generated `DMZ-White`.
+- `/root/micromamba/envs/py311/bin/python -m pytest tests/test_cursor_conversion_samples.py tests/test_native_cursor_converter.py -q` -> 12 passed.
+- `/root/micromamba/envs/py311/bin/python -m ruff check .` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m ty check . --python /root/micromamba/envs/py311/bin/python` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m pytest` -> 68 passed.
+- `ANI2XCUR_REQUIRE_WAYLAND_TEST=1 /root/micromamba/envs/py311/bin/python -m pytest -m wayland -q` -> 1 passed, 67 deselected.
+- `/root/micromamba/envs/py311/bin/python -m ruff check .` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m ty check . --python /root/micromamba/envs/py311/bin/python` -> passed.
+- `/root/micromamba/envs/py311/bin/python -m pytest` -> 68 passed.

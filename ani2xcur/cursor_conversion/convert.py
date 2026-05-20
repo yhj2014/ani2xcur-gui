@@ -154,16 +154,17 @@ def generate_linux_cursor_config(
         cursor_name (str): 鼠标指针名称
         cursor_path (Path): 配置文件的保存路径
     """
+    inherited_theme = _linux_cursor_inherited_theme(cursor_name)
     cursor_config = f"""
 [Icon Theme]
 Name={cursor_name}
-Inherits={cursor_name}
+Inherits={inherited_theme}
 """.strip()
     index_config = f"""
 [Icon Theme]
 Name={cursor_name}
 Comment={cursor_name} cursor for Linux
-Inherits={cursor_name}
+Inherits={inherited_theme}
 """.strip()
 
     logger.debug("鼠标指针配置文件内容:\n\n- cursor.theme:\n````\n%s\n```\n\n- index.theme:\n```\n%s\n```", cursor_config, index_config)
@@ -171,6 +172,13 @@ Inherits={cursor_name}
         file.write(cursor_config)
     with open((cursor_path / "index.theme"), "w", encoding="utf-8") as file:
         file.write(index_config)
+
+
+def _linux_cursor_inherited_theme(cursor_name: str) -> str:
+    """Return a non-recursive fallback cursor theme name."""
+    if cursor_name.casefold() == "default":
+        return "Adwaita"
+    return "default"
 
 
 def x11_cursor_to_win(

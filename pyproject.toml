@@ -83,4 +83,5 @@ lint.ignore = [
 [tool.pytest.ini_options]
 markers = [
     "integration: 真实样本转换烟雾测试",
+    "wayland: 需要 headless Weston 和 libwayland-cursor 的集成测试",
 ]

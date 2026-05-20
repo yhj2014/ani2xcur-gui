@@ -24,7 +24,8 @@ def test_win_cursor_to_x11_uses_real_windows_sample(monkeypatch, windows_inf_fil
 
     assert save_dir == tmp_path / "DMZ-White"
     assert len(calls) == len(CURSOR_KEYS["win"])
-    assert (save_dir / "cursor.theme").read_text(encoding="utf-8") == "[Icon Theme]\nName=DMZ-White\nInherits=DMZ-White"
+    assert (save_dir / "cursor.theme").read_text(encoding="utf-8") == "[Icon Theme]\nName=DMZ-White\nInherits=default"
+    assert "Inherits=DMZ-White" not in (save_dir / "index.theme").read_text(encoding="utf-8")
     assert (save_dir / "index.theme").is_file()
     assert (save_dir / "install_cursor.sh").is_file()
 
