@@ -148,3 +148,18 @@ def test_set_linux_cursor_size_writes_all_desktop_configs_on_wayland(monkeypatch
         "refresh_lxqt_cursor_session",
         "refresh_kde_cursor_session",
     ]
+
+
+def test_set_linux_cursor_size_refreshes_kde_even_without_live_theme(monkeypatch):
+    calls = _patch_linux_cursor_size_setters(monkeypatch)
+    _set_kde_wayland_env(monkeypatch)
+    monkeypatch.setattr(linux_cur_manager, "_get_live_cursor_theme", lambda: None)
+    monkeypatch.setattr(linux_cur_manager, "refresh_lxqt_cursor_session", lambda name, size: calls.append(("refresh_lxqt_cursor_session", name, size)))
+    monkeypatch.setattr(linux_cur_manager, "refresh_kde_cursor_session", lambda name, size: calls.append(("refresh_kde_cursor_session", name, size)))
+
+    linux_cur_manager.set_linux_cursor_size(32)
+
+    assert calls[-2:] == [
+        ("refresh_lxqt_cursor_session", None, 32),
+        ("refresh_kde_cursor_session", None, 32),
+    ]

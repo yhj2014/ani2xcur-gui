@@ -83,7 +83,7 @@ def set_mate_cursor_size(
         return
 
     run_cmd(
-        ["gsettings", "get", "org.mate.peripherals-mouse", "cursor-size", str(cursor_size)],
+        ["gsettings", "set", "org.mate.peripherals-mouse", "cursor-size", str(cursor_size)],
         live=False,
         check=False,
     )

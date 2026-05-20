@@ -42,14 +42,25 @@ def _writeconfig_executable() -> str | None:
     return _which_first("kwriteconfig6", "kwriteconfig5", "kwriteconfig")
 
 
-def _apply_plasma_cursor_theme(cursor_name: str) -> None:
+def _apply_plasma_cursor_theme(cursor_name: str | None, cursor_size: int | None) -> None:
+    if cursor_name is None:
+        return
+
     executable = _which_first("plasma-apply-cursortheme")
     if executable is None:
         logger.debug("未找到 plasma-apply-cursortheme, 跳过 KDE 光标主题即时应用")
         return
 
-    logger.debug("执行 KDE 光标主题即时应用命令: %s", [executable, cursor_name])
-    run_cmd([executable, cursor_name], live=False, check=False)
+    command = [executable, cursor_name]
+    logger.debug("执行 KDE 光标主题即时应用命令: %s", command)
+    run_cmd(command, live=False, check=False)
+
+    if cursor_size is None:
+        return
+
+    sized_command = [executable, cursor_name, "--size", str(cursor_size)]
+    logger.debug("执行 KDE 光标大小即时应用命令: %s", sized_command)
+    run_cmd(sized_command, live=False, check=False)
 
 
 def _notify_kde_cursor_change() -> None:
@@ -93,14 +104,14 @@ def _refresh_root_cursor(cursor_name: str | None, cursor_size: int | None) -> No
     run_cmd(command, custom_env=custom_env, live=False, check=False)
 
 
-def refresh_kde_cursor_session(cursor_name: str, cursor_size: int | None = None) -> None:
+def refresh_kde_cursor_session(cursor_name: str | None, cursor_size: int | None = None) -> None:
     """在光标配置文件写入后刷新 KDE 会话中的光标状态。
 
     Args:
-        cursor_name (str): 要应用的光标主题名称。
+        cursor_name (str | None): 要应用的光标主题名称。
         cursor_size (int | None): 要应用的光标大小。
     """
-    _apply_plasma_cursor_theme(cursor_name)
+    _apply_plasma_cursor_theme(cursor_name, cursor_size)
     _notify_kde_cursor_change()
     if is_wayland_session():
         logger.debug("当前为 Wayland 会话, 跳过 KDE X11-only 光标刷新")

@@ -117,6 +117,7 @@ def test_set_lxqt_cursor_theme_skips_x11_refresh_commands_on_wayland(monkeypatch
 def test_refresh_lxqt_cursor_session_uses_x11_refresh_commands(monkeypatch, tmp_path):
     calls = []
     x_calls = []
+    root_envs = []
     _set_config_paths(monkeypatch, tmp_path)
     x_org.X_RESOURCES_PATH.write_text("Xcursor.theme: Bibata\n", encoding="utf-8")
 
@@ -127,6 +128,8 @@ def test_refresh_lxqt_cursor_session_uses_x11_refresh_commands(monkeypatch, tmp_
 
     def fake_run_cmd(command, **kwargs):
         calls.append(command)
+        if command[0] == "xsetroot":
+            root_envs.append(kwargs.get("custom_env"))
         return None
 
     monkeypatch.setattr(lxqt.shutil, "which", fake_which)
@@ -140,6 +143,8 @@ def test_refresh_lxqt_cursor_session_uses_x11_refresh_commands(monkeypatch, tmp_
         ["xsetroot", "-cursor_name", "left_ptr"],
     ]
     assert x_calls == [("Bibata", 32)]
+    assert root_envs[0]["XCURSOR_THEME"] == "Bibata"
+    assert root_envs[0]["XCURSOR_SIZE"] == "32"
 
 
 def test_get_lxqt_cursor_theme_falls_back_to_xresources(monkeypatch, tmp_path):

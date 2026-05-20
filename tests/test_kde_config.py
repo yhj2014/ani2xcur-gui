@@ -103,6 +103,7 @@ def test_refresh_kde_cursor_session_uses_kde_x11_helpers(monkeypatch):
 
     assert calls == [
         ["plasma-apply-cursortheme", "MyCursor"],
+        ["plasma-apply-cursortheme", "MyCursor", "--size", "32"],
         [
             "dbus-send",
             "--session",
@@ -117,6 +118,49 @@ def test_refresh_kde_cursor_session_uses_kde_x11_helpers(monkeypatch):
     assert x_calls == [("MyCursor", 32)]
     assert root_envs[0]["XCURSOR_THEME"] == "MyCursor"
     assert root_envs[0]["XCURSOR_SIZE"] == "32"
+
+
+def test_refresh_kde_cursor_session_can_apply_size_without_theme_name(monkeypatch):
+    calls = []
+    x_calls = []
+    root_envs = []
+    monkeypatch.setenv("XDG_SESSION_TYPE", "x11")
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
+
+    def fake_which(name):
+        if name in {"plasma-apply-cursortheme", "dbus-send", "xsetroot"}:
+            return f"/usr/bin/{name}"
+        return None
+
+    def fake_run_cmd(command, **kwargs):
+        calls.append(command)
+        if command[0] == "xsetroot":
+            root_envs.append(kwargs.get("custom_env"))
+        return None
+
+    monkeypatch.setattr(kde.shutil, "which", fake_which)
+    monkeypatch.setattr(kde, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(kde, "apply_x_cursor_theme", lambda name, size=None: x_calls.append((name, size)))
+
+    kde.refresh_kde_cursor_session(None, 32)
+
+    assert calls == [
+        [
+            "dbus-send",
+            "--session",
+            "--type=signal",
+            "/KGlobalSettings",
+            "org.kde.KGlobalSettings.notifyChange",
+            "int32:5",
+            "int32:0",
+        ],
+        ["xsetroot", "-cursor_name", "left_ptr"],
+    ]
+    assert x_calls == [(None, 32)]
+    assert root_envs[0]["XCURSOR_SIZE"] == "32"
+    assert "XCURSOR_THEME" not in root_envs[0]
+
 
 def test_set_kde_cursor_size_refreshes_current_theme(monkeypatch):
     calls = []
@@ -174,6 +218,7 @@ def test_refresh_kde_cursor_session_on_wayland_uses_plasma_apply_without_x11_ref
 
     assert calls == [
         ["plasma-apply-cursortheme", "Blue"],
+        ["plasma-apply-cursortheme", "Blue", "--size", "24"],
         [
             "dbus-send",
             "--session",

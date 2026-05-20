@@ -269,8 +269,7 @@ def _get_live_cursor_size() -> int | None:
 
 def _refresh_linux_cursor_session(cursor_name: str | None, cursor_size: int | None) -> None:
     refresh_lxqt_cursor_session(cursor_name, cursor_size)
-    if cursor_name is not None:
-        refresh_kde_cursor_session(cursor_name, cursor_size)
+    refresh_kde_cursor_session(cursor_name, cursor_size)
 
 
 def set_linux_cursor_theme(

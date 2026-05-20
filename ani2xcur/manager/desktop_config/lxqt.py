@@ -5,6 +5,7 @@
 """
 
 import shutil
+import os
 import configparser
 from pathlib import Path
 
@@ -49,14 +50,22 @@ def _merge_x_resources() -> None:
     run_cmd(["xrdb", "-merge", str(x_org.X_RESOURCES_PATH)], live=False, check=False)
 
 
-def _refresh_root_cursor() -> None:
+def _refresh_root_cursor(cursor_name: str | None, cursor_size: int | None) -> None:
     if is_wayland_session():
         return
 
     if not shutil.which("xsetroot"):
         return
 
-    run_cmd(["xsetroot", "-cursor_name", "left_ptr"], live=False, check=False)
+    custom_env = None
+    if cursor_name is not None or cursor_size is not None:
+        custom_env = os.environ.copy()
+        if cursor_name is not None:
+            custom_env["XCURSOR_THEME"] = cursor_name
+        if cursor_size is not None:
+            custom_env["XCURSOR_SIZE"] = str(cursor_size)
+
+    run_cmd(["xsetroot", "-cursor_name", "left_ptr"], custom_env=custom_env, live=False, check=False)
 
 
 def _update_session_environment(cursor_name: str | None, cursor_size: int | None) -> None:
@@ -88,7 +97,7 @@ def refresh_lxqt_cursor_session(cursor_name: str | None, cursor_size: int | None
     _merge_x_resources()
     _update_session_environment(cursor_name, cursor_size)
     apply_x_cursor_theme(cursor_name, cursor_size)
-    _refresh_root_cursor()
+    _refresh_root_cursor(cursor_name, cursor_size)
 
 
 def get_lxqt_cursor_theme() -> str | None:
