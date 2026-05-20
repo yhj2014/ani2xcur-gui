@@ -4,7 +4,15 @@ import re
 import configparser
 from pathlib import Path
 
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from ani2xcur.logger import get_logger
 from ani2xcur.utils import safe_convert_to_int
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 GTK4_CONFIG_PATH = Path("~/.config/gtk-4.0/settings.ini").expanduser()
 """GTK 4.0 配置文件路径"""
@@ -28,6 +36,7 @@ def read_gtk2_config(
     """
     config: dict[str, str] = {}
 
+    logger.debug("读取 GTK 2.0 配置文件: '%s'", config_path)
     with open(config_path, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
@@ -47,6 +56,7 @@ def read_gtk2_config(
 
                 config[key] = value
 
+    logger.debug("读取 GTK 2.0 配置完成: keys=%s", sorted(config))
     return config
 
 
@@ -97,6 +107,7 @@ def write_gtk2_config(
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.writelines(new_lines)
+    logger.debug("写入 GTK 2.0 配置文件: '%s', updates=%s", config_path, updates)
 
 
 def get_gtk4_cursor_theme() -> str | None:
@@ -108,7 +119,10 @@ def get_gtk4_cursor_theme() -> str | None:
     config = configparser.ConfigParser()
     config.read(GTK4_CONFIG_PATH, encoding="utf-8")
     if "Settings" in config and "gtk-cursor-theme-name" in config["Settings"]:
-        return config.get("Settings", "gtk-cursor-theme-name")
+        result = config.get("Settings", "gtk-cursor-theme-name")
+        logger.debug("GTK4 当前光标主题读取结果: %r", result)
+        return result
+    logger.debug("GTK4 配置未提供光标主题: '%s'", GTK4_CONFIG_PATH)
     return None
 
 
@@ -121,7 +135,10 @@ def get_gtk3_cursor_theme() -> str | None:
     config = configparser.ConfigParser()
     config.read(GTK3_CONFIG_PATH, encoding="utf-8")
     if "Settings" in config and "gtk-cursor-theme-name" in config["Settings"]:
-        return config.get("Settings", "gtk-cursor-theme-name")
+        result = config.get("Settings", "gtk-cursor-theme-name")
+        logger.debug("GTK3 当前光标主题读取结果: %r", result)
+        return result
+    logger.debug("GTK3 配置未提供光标主题: '%s'", GTK3_CONFIG_PATH)
     return None
 
 
@@ -132,10 +149,13 @@ def get_gtk2_cursor_theme() -> str | None:
         (str | None): 当前使用的鼠标指针名称
     """
     if not GTK2_CONFIG_PATH.is_file():
+        logger.debug("GTK2 配置文件不存在, 无法读取光标主题: '%s'", GTK2_CONFIG_PATH)
         return None
 
     config = read_gtk2_config(GTK2_CONFIG_PATH)
-    return config.get("gtk-cursor-theme-name")
+    result = config.get("gtk-cursor-theme-name")
+    logger.debug("GTK2 当前光标主题读取结果: %r", result)
+    return result
 
 
 def get_gtk4_cursor_size() -> int | None:
@@ -147,7 +167,10 @@ def get_gtk4_cursor_size() -> int | None:
     config = configparser.ConfigParser()
     config.read(GTK4_CONFIG_PATH, encoding="utf-8")
     if "Settings" in config and "gtk-cursor-theme-size" in config["Settings"]:
-        return safe_convert_to_int(config.get("Settings", "gtk-cursor-theme-size"))
+        result = safe_convert_to_int(config.get("Settings", "gtk-cursor-theme-size"))
+        logger.debug("GTK4 当前光标大小读取结果: %r", result)
+        return result
+    logger.debug("GTK4 配置未提供光标大小: '%s'", GTK4_CONFIG_PATH)
     return None
 
 
@@ -160,7 +183,10 @@ def get_gtk3_cursor_size() -> int | None:
     config = configparser.ConfigParser()
     config.read(GTK3_CONFIG_PATH, encoding="utf-8")
     if "Settings" in config and "gtk-cursor-theme-size" in config["Settings"]:
-        return safe_convert_to_int(config.get("Settings", "gtk-cursor-theme-size"))
+        result = safe_convert_to_int(config.get("Settings", "gtk-cursor-theme-size"))
+        logger.debug("GTK3 当前光标大小读取结果: %r", result)
+        return result
+    logger.debug("GTK3 配置未提供光标大小: '%s'", GTK3_CONFIG_PATH)
     return None
 
 
@@ -171,10 +197,13 @@ def get_gtk2_cursor_size() -> int | None:
         (int | None): 当前使用的鼠标指针大小
     """
     if not GTK2_CONFIG_PATH.is_file():
+        logger.debug("GTK2 配置文件不存在, 无法读取光标大小: '%s'", GTK2_CONFIG_PATH)
         return None
 
     config = read_gtk2_config(GTK2_CONFIG_PATH)
-    return safe_convert_to_int(config.get("gtk-cursor-theme-size"))
+    result = safe_convert_to_int(config.get("gtk-cursor-theme-size"))
+    logger.debug("GTK2 当前光标大小读取结果: %r", result)
+    return result
 
 
 def set_gtk4_cursor_theme(
@@ -192,6 +221,7 @@ def set_gtk4_cursor_theme(
         config["Settings"] = {}
 
     config["Settings"]["gtk-cursor-theme-name"] = cursor_name
+    logger.debug("写入 GTK4 光标主题: %s -> '%s'", cursor_name, GTK4_CONFIG_PATH)
     with open(GTK4_CONFIG_PATH, "w", encoding="utf-8") as f:
         config.write(f, space_around_delimiters=False)
 
@@ -211,6 +241,7 @@ def set_gtk3_cursor_theme(
         config["Settings"] = {}
 
     config["Settings"]["gtk-cursor-theme-name"] = cursor_name
+    logger.debug("写入 GTK3 光标主题: %s -> '%s'", cursor_name, GTK3_CONFIG_PATH)
     with open(GTK3_CONFIG_PATH, "w", encoding="utf-8") as f:
         config.write(f, space_around_delimiters=False)
 
@@ -224,6 +255,7 @@ def set_gtk2_cursor_theme(
         cursor_name (str): 要设置的鼠标指针配置名称
     """
     GTK2_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    logger.debug("写入 GTK2 光标主题: %s -> '%s'", cursor_name, GTK2_CONFIG_PATH)
     write_gtk2_config(config_path=GTK2_CONFIG_PATH, updates={"gtk-cursor-theme-name": cursor_name})
 
 
@@ -242,6 +274,7 @@ def set_gtk4_cursor_size(
         config["Settings"] = {}
 
     config["Settings"]["gtk-cursor-theme-size"] = str(cursor_size)
+    logger.debug("写入 GTK4 光标大小: %s -> '%s'", cursor_size, GTK4_CONFIG_PATH)
     with open(GTK4_CONFIG_PATH, "w", encoding="utf-8") as f:
         config.write(f, space_around_delimiters=False)
 
@@ -261,6 +294,7 @@ def set_gtk3_cursor_size(
         config["Settings"] = {}
 
     config["Settings"]["gtk-cursor-theme-size"] = str(cursor_size)
+    logger.debug("写入 GTK3 光标大小: %s -> '%s'", cursor_size, GTK3_CONFIG_PATH)
     with open(GTK3_CONFIG_PATH, "w", encoding="utf-8") as f:
         config.write(f, space_around_delimiters=False)
 
@@ -274,4 +308,5 @@ def set_gtk2_cursor_size(
         cursor_size (int): 要设置的鼠标指针大小
     """
     GTK2_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    logger.debug("写入 GTK2 光标大小: %s -> '%s'", cursor_size, GTK2_CONFIG_PATH)
     write_gtk2_config(config_path=GTK2_CONFIG_PATH, updates={"gtk-cursor-theme-size": str(cursor_size)})

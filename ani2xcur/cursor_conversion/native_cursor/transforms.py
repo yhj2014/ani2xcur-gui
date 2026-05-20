@@ -6,7 +6,15 @@ from math import ceil
 
 from PIL import Image, ImageColor, ImageFilter
 
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame, CursorImage
+from ani2xcur.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 DEFAULT_XCURSOR_SIZES = (24, 28, 32, 40, 48, 56, 64, 72, 80)
 """转换到 Linux Xcursor 主题时默认生成的名义尺寸列表。"""
@@ -24,6 +32,7 @@ def scale_frames(frames: list[CursorFrame], scale: float) -> None:
     if scale <= 0:
         raise ValueError("Cursor scale must be greater than zero")
 
+    logger.debug("开始缩放光标帧: frame_count=%s, scale=%s", len(frames), scale)
     for frame in frames:
         for cursor in frame.images:
             width, height = cursor.image.size
@@ -37,6 +46,7 @@ def scale_frames(frames: list[CursorFrame], scale: float) -> None:
                 max(0, int(round(hotspot_x * scale))),
                 max(0, int(round(hotspot_y * scale))),
             )
+    logger.debug("光标帧缩放完成")
 
 
 def normalize_xcursor_sizes(
@@ -57,6 +67,8 @@ def normalize_xcursor_sizes(
     if any(size <= 0 for size in sizes):
         raise ValueError("Xcursor sizes must be greater than zero")
 
+    generated_count = 0
+    reused_count = 0
     for frame in frames:
         if not frame.images:
             continue
@@ -66,12 +78,21 @@ def normalize_xcursor_sizes(
         for target_size in sizes:
             if target_size in existing_by_nominal:
                 normalized_images.append(existing_by_nominal[target_size])
+                reused_count += 1
                 continue
 
             source = _nearest_cursor_image(frame.images, target_size)
             normalized_images.append(_resize_cursor_image(source, target_size))
+            generated_count += 1
 
         frame.images = normalized_images
+    logger.debug(
+        "Xcursor 尺寸补齐完成: frame_count=%s, target_sizes=%s, reused=%s, generated=%s",
+        len(frames),
+        sizes,
+        reused_count,
+        generated_count,
+    )
 
 
 def add_shadow_to_frames(
@@ -96,6 +117,16 @@ def add_shadow_to_frames(
         yoffset (float): 阴影垂直偏移比例。
     """
     opacity = max(0, min(255, opacity))
+    logger.debug(
+        "开始添加光标阴影: frame_count=%s, color=%s, opacity=%s, radius=%s, sigma=%s, xoffset=%s, yoffset=%s",
+        len(frames),
+        color,
+        opacity,
+        radius,
+        sigma,
+        xoffset,
+        yoffset,
+    )
     for frame in frames:
         for cursor in frame.images:
             image, hotspot = _add_shadow_to_image(
@@ -110,6 +141,7 @@ def add_shadow_to_frames(
             )
             cursor.image = image
             cursor.hotspot = hotspot
+    logger.debug("光标阴影添加完成")
 
 
 def _add_shadow_to_image(

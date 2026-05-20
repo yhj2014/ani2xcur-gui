@@ -3,6 +3,15 @@
 import configparser
 from pathlib import Path
 
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from ani2xcur.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
+
 XDG_CONFIG_PATH = Path("~/.icons/default/index.theme").expanduser()
 """XDG 配置文件路径"""
 
@@ -22,6 +31,11 @@ def get_xdg_cursor_theme() -> tuple[str | None, str | None]:
     config_share.read(XDG_CONFIG_SHARE_PATH, encoding="utf-8")
     cursor_name = config.get("Icon Theme", "Inherits") if "Icon Theme" in config and "Inherits" in config["Icon Theme"] else None
     cursor_name_share = config_share.get("Icon Theme", "Inherits") if "Icon Theme" in config_share and "Inherits" in config_share["Icon Theme"] else None
+    logger.debug(
+        "XDG 光标主题读取结果: icons_default=%r, local_share_default=%r",
+        cursor_name,
+        cursor_name_share,
+    )
     return (cursor_name, cursor_name_share)
 
 
@@ -46,6 +60,12 @@ def set_xdg_cursor_theme(cursor_name: str) -> None:
     config["Icon Theme"]["Inherits"] = cursor_name
     config_share["Icon Theme"]["Inherits"] = cursor_name
 
+    logger.debug(
+        "写入 XDG 光标主题: cursor_name=%s, paths=(%s, %s)",
+        cursor_name,
+        XDG_CONFIG_PATH,
+        XDG_CONFIG_SHARE_PATH,
+    )
     with open(XDG_CONFIG_PATH, "w", encoding="utf-8") as f:
         config.write(f, space_around_delimiters=False)
 

@@ -29,6 +29,7 @@ def _which_first(*names: str) -> str | None:
     for name in names:
         executable = shutil.which(name)
         if executable:
+            logger.debug("找到 KDE 可执行文件候选: %s -> %s", name, executable)
             return name
     logger.debug("未找到 KDE 可执行文件候选: %s", names)
     return None
@@ -44,6 +45,7 @@ def _writeconfig_executable() -> str | None:
 
 def _apply_plasma_cursor_theme(cursor_name: str | None, cursor_size: int | None) -> None:
     if cursor_name is None:
+        logger.debug("未提供 KDE 光标主题名称, 跳过 plasma-apply-cursortheme")
         return
 
     executable = _which_first("plasma-apply-cursortheme")
@@ -100,7 +102,7 @@ def _refresh_root_cursor(cursor_name: str | None, cursor_size: int | None) -> No
             custom_env["XCURSOR_SIZE"] = str(cursor_size)
 
     command = ["xsetroot", "-cursor_name", "left_ptr"]
-    logger.debug("执行 X11 root 光标刷新命令: %s", command)
+    logger.debug("执行 X11 root 光标刷新命令: %s, cursor_name=%r, cursor_size=%r", command, cursor_name, cursor_size)
     run_cmd(command, custom_env=custom_env, live=False, check=False)
 
 
@@ -111,6 +113,7 @@ def refresh_kde_cursor_session(cursor_name: str | None, cursor_size: int | None 
         cursor_name (str | None): 要应用的光标主题名称。
         cursor_size (int | None): 要应用的光标大小。
     """
+    logger.debug("刷新 KDE 光标会话: cursor_name=%r, cursor_size=%r", cursor_name, cursor_size)
     _apply_plasma_cursor_theme(cursor_name, cursor_size)
     _notify_kde_cursor_change()
     if is_wayland_session():
@@ -119,6 +122,7 @@ def refresh_kde_cursor_session(cursor_name: str | None, cursor_size: int | None 
 
     apply_x_cursor_theme(cursor_name, cursor_size)
     _refresh_root_cursor(cursor_name, cursor_size)
+    logger.debug("KDE 光标会话刷新完成")
 
 
 def get_kde_cursor_theme() -> str | None:
@@ -148,12 +152,15 @@ def get_kde_cursor_theme() -> str | None:
     )
 
     if not isinstance(result, str):
+        logger.debug("KDE 当前光标主题读取结果不是字符串: %r", result)
         return None
 
     result = result.strip()
     if result == "":
+        logger.debug("KDE 当前光标主题读取结果为空")
         return None
 
+    logger.debug("KDE 当前光标主题读取结果: %s", result)
     return result
 
 
@@ -184,14 +191,17 @@ def get_kde_cursor_size() -> int | None:
     )
 
     if not isinstance(result, str):
+        logger.debug("KDE 当前光标大小读取结果不是字符串: %r", result)
         return None
 
     result = result.strip()
     if result == "":
+        logger.debug("KDE 当前光标大小读取结果为空")
         return None
 
     cursor_size = safe_convert_to_int(result)
     if isinstance(cursor_size, int):
+        logger.debug("KDE 当前光标大小读取结果: %s", cursor_size)
         return cursor_size
     logger.debug("KDE 当前光标大小读取结果不是整数: %r", result)
     return None

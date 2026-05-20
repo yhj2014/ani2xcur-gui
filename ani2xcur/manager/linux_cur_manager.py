@@ -220,6 +220,7 @@ def list_linux_cursors() -> CursorSchemesList:
             }
         )
 
+    logger.debug("已发现 Linux 鼠标指针主题数量: %s", len(cursors_list))
     return cursors_list
 
 
@@ -233,43 +234,51 @@ def _first_config_value(*values: str | int | None) -> str | int | None:
 def _get_live_cursor_theme() -> str | None:
     xdg_theme = get_xdg_cursor_theme()
     xdg_cursor_name = _first_config_value(*xdg_theme) if xdg_theme is not None else None
-    cursor_name = _first_config_value(
-        get_kde_cursor_theme(),
-        get_lxqt_cursor_theme(),
-        get_x_resources_cursor_theme(),
-        get_gtk_xsettings_cursor_theme(),
-        get_gtk4_cursor_theme(),
-        get_gtk3_cursor_theme(),
-        get_gtk2_cursor_theme(),
-        get_gnome_cursor_theme(),
-        get_cinnamon_cursor_theme(),
-        get_mate_cursor_theme(),
-        get_xfce_cursor_theme(),
-        xdg_cursor_name,
-    )
-    return cursor_name if isinstance(cursor_name, str) and cursor_name.strip() else None
+    values = {
+        "KDE": get_kde_cursor_theme(),
+        "LXQt": get_lxqt_cursor_theme(),
+        "X.Org": get_x_resources_cursor_theme(),
+        "X Settings": get_gtk_xsettings_cursor_theme(),
+        "GTK4": get_gtk4_cursor_theme(),
+        "GTK3": get_gtk3_cursor_theme(),
+        "GTK2": get_gtk2_cursor_theme(),
+        "Gnome": get_gnome_cursor_theme(),
+        "Cinnamon": get_cinnamon_cursor_theme(),
+        "Mate": get_mate_cursor_theme(),
+        "Xfce": get_xfce_cursor_theme(),
+        "XDG": xdg_cursor_name,
+    }
+    cursor_name = _first_config_value(*values.values())
+    result = cursor_name if isinstance(cursor_name, str) and cursor_name.strip() else None
+    logger.debug("实时刷新使用的 Linux 光标主题候选: %s, selected=%r", values, result)
+    return result
 
 
 def _get_live_cursor_size() -> int | None:
-    cursor_size = _first_config_value(
-        get_kde_cursor_size(),
-        get_lxqt_cursor_size(),
-        get_x_resources_cursor_size(),
-        get_gtk_xsettings_cursor_size(),
-        get_gtk4_cursor_size(),
-        get_gtk3_cursor_size(),
-        get_gtk2_cursor_size(),
-        get_gnome_cursor_size(),
-        get_cinnamon_cursor_size(),
-        get_mate_cursor_size(),
-        get_xfce_cursor_size(),
-    )
-    return cursor_size if isinstance(cursor_size, int) else None
+    values = {
+        "KDE": get_kde_cursor_size(),
+        "LXQt": get_lxqt_cursor_size(),
+        "X.Org": get_x_resources_cursor_size(),
+        "X Settings": get_gtk_xsettings_cursor_size(),
+        "GTK4": get_gtk4_cursor_size(),
+        "GTK3": get_gtk3_cursor_size(),
+        "GTK2": get_gtk2_cursor_size(),
+        "Gnome": get_gnome_cursor_size(),
+        "Cinnamon": get_cinnamon_cursor_size(),
+        "Mate": get_mate_cursor_size(),
+        "Xfce": get_xfce_cursor_size(),
+    }
+    cursor_size = _first_config_value(*values.values())
+    result = cursor_size if isinstance(cursor_size, int) else None
+    logger.debug("实时刷新使用的 Linux 光标大小候选: %s, selected=%r", values, result)
+    return result
 
 
 def _refresh_linux_cursor_session(cursor_name: str | None, cursor_size: int | None) -> None:
+    logger.debug("刷新 Linux 光标会话: cursor_name=%r, cursor_size=%r", cursor_name, cursor_size)
     refresh_lxqt_cursor_session(cursor_name, cursor_size)
     refresh_kde_cursor_session(cursor_name, cursor_size)
+    logger.debug("Linux 光标会话刷新完成")
 
 
 def set_linux_cursor_theme(
@@ -288,6 +297,7 @@ def set_linux_cursor_theme(
         raise ValueError(f"鼠标指针 {cursor_name} 不存在")
 
     logger.info("将 Linux 系统中使用的鼠标指针主题设置为 '%s'", cursor_name)
+    logger.debug("开始写入 Linux 各桌面光标主题配置: cursor_name=%s", cursor_name)
     set_cinnamon_cursor_theme(cursor_name)
     set_gnome_cursor_theme(cursor_name)
     set_gtk2_cursor_theme(cursor_name)
@@ -300,7 +310,9 @@ def set_linux_cursor_theme(
     set_xdg_cursor_theme(cursor_name)
     set_xfce_cursor_theme(cursor_name)
     set_gtk_xsettings_cursor_theme(cursor_name)
-    _refresh_linux_cursor_session(cursor_name, _get_live_cursor_size())
+    live_size = _get_live_cursor_size()
+    logger.debug("准备实时刷新 Linux 光标主题: cursor_name=%s, live_size=%r", cursor_name, live_size)
+    _refresh_linux_cursor_session(cursor_name, live_size)
     logger.info("Linux 鼠标指针主题已设置为 '%s'", cursor_name)
 
 
@@ -323,6 +335,7 @@ def set_linux_cursor_size(
         raise ValueError("鼠标指针大小的值超过合法范围") from e
 
     logger.info("将 Linux 系统中使用的鼠标指针大小设置为 %s", cursor_size)
+    logger.debug("开始写入 Linux 各桌面光标大小配置: cursor_size=%s", cursor_size)
     set_cinnamon_cursor_size(cursor_size)
     set_gnome_cursor_size(cursor_size)
     set_gtk2_cursor_size(cursor_size)
@@ -334,7 +347,9 @@ def set_linux_cursor_size(
     set_x_resources_cursor_size(cursor_size)
     set_xfce_cursor_size(cursor_size)
     set_gtk_xsettings_cursor_size(cursor_size)
-    _refresh_linux_cursor_session(_get_live_cursor_theme(), cursor_size)
+    live_theme = _get_live_cursor_theme()
+    logger.debug("准备实时刷新 Linux 光标大小: live_theme=%r, cursor_size=%s", live_theme, cursor_size)
+    _refresh_linux_cursor_session(live_theme, cursor_size)
     logger.info("鼠标指针大小已设置为 %s", cursor_size)
 
 
@@ -401,6 +416,11 @@ def delete_linux_cursor(
     logger.info("从 Linux 系统删除 '%s' 鼠标指针中", cursor_name)
     for scheme in cursors:
         if cursor_name == scheme["name"]:
+            logger.debug(
+                "删除 Linux 鼠标指针: cursor_files=%s, install_paths=%s",
+                len(scheme["cursor_files"]),
+                scheme["install_paths"],
+            )
             # 清理鼠标指针文件
             for file in scheme["cursor_files"]:
                 if not file.exists():
@@ -457,6 +477,13 @@ def install_linux_cursor(
         dst = LINUX_USER_ICONS_PATH / cursor_name
 
     logger.info("将 '%s' 鼠标指针安装到 '%s' 中", cursor_name, dst)
+    logger.debug(
+        "安装 Linux 鼠标指针: desktop_entry='%s', src='%s', dst='%s', cursor_files=%s",
+        desktop_entry_file,
+        src,
+        dst,
+        len(scheme_info["cursor_paths"]),
+    )
 
     try:
         copy_files(src, dst)
@@ -497,6 +524,12 @@ def export_linux_cursor(
     save_dir = output_path / cursor_name
 
     logger.info("将 '%s' 鼠标指针导出到 '%s' 中", cursor_name, save_dir)
+    logger.debug(
+        "导出 Linux 鼠标指针: src='%s', save_dir='%s', cursor_files=%s",
+        src,
+        save_dir,
+        len(cursor_data["cursor_files"]),
+    )
 
     try:
         copy_files(src, save_dir)

@@ -59,6 +59,15 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
+DEBUG_ENV_KEYS = (
+    "DISPLAY",
+    "WAYLAND_DISPLAY",
+    "XDG_SESSION_TYPE",
+    "XCURSOR_THEME",
+    "XCURSOR_SIZE",
+)
+"""命令调试日志中允许展示的环境变量键。"""
+
 
 def preprocess_command(
     command: list[str] | str,
@@ -87,6 +96,40 @@ def preprocess_command(
         if isinstance(command, str):
             return shlex.split(command)
         return command
+
+
+def _debug_env_summary(
+    env: dict[str, str],
+) -> dict[str, str]:
+    """提取命令调试日志中允许展示的环境变量。
+
+    Args:
+        env (dict[str, str]): 进程环境变量。
+    Returns:
+        dict[str, str]: 允许写入日志的环境变量摘要。
+    """
+    return {key: env[key] for key in DEBUG_ENV_KEYS if key in env}
+
+
+def _debug_text_summary(
+    text: str | None,
+    limit: int = 500,
+) -> str | None:
+    """生成命令输出的短摘要。
+
+    Args:
+        text (str | None): 命令输出内容。
+        limit (int): 最大保留长度。
+    Returns:
+        str | None: 输出摘要。
+    """
+    if text is None:
+        return None
+
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}...<已截断 {len(text) - limit} 个字符>"
 
 
 def run_cmd(
@@ -132,9 +175,23 @@ def run_cmd(
     if not live:
         kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
 
-    logger.debug("执行命令的参数: %s", kwargs)
+    logger.debug(
+        "执行命令: command=%s, cwd=%s, shell=%s, live=%s, check=%s, env=%s",
+        command_to_exec,
+        cwd,
+        shell,
+        live,
+        check,
+        _debug_env_summary(custom_env),
+    )
 
     result: subprocess.CompletedProcess[str] = subprocess.run(**kwargs)  # pylint: disable=subprocess-run-check
+    logger.debug(
+        "命令执行完成: returncode=%s, stdout=%r, stderr=%r",
+        result.returncode,
+        _debug_text_summary(result.stdout),
+        _debug_text_summary(result.stderr),
+    )
 
     if check and result.returncode != 0:
         errors = [

@@ -1,7 +1,9 @@
 """入口文件"""
 
+import logging
 import sys
 import traceback
+from typing import Annotated
 
 import typer
 from click.exceptions import Abort, ClickException, Exit
@@ -44,6 +46,12 @@ logger = get_logger(
 )
 
 
+def _enable_debug_logging() -> None:
+    """启用调试日志输出。"""
+    logging.getLogger(LOGGER_NAME).setLevel(logging.DEBUG)
+    logger.debug("已启用 debug 日志")
+
+
 def get_app() -> typer.Typer:
     """获取 Ani2xcur 命令行应用
 
@@ -51,6 +59,21 @@ def get_app() -> typer.Typer:
         typer.Typer: Ani2xcur 命令行应用
     """
     app = typer_factory("鼠标指针转换、管理和 ImageMagick 辅助管理的命令行工具")
+
+    @app.callback()
+    def _main_callback(
+        debug: Annotated[
+            bool,
+            typer.Option(
+                "--debug",
+                help="输出调试日志, 便于排查转换、安装和桌面刷新问题",
+            ),
+        ] = False,
+    ) -> None:
+        """处理全局命令行选项。"""
+        if debug:
+            _enable_debug_logging()
+
     app.command(help="显示 Ani2xcur 和其他组件的当前版本", name="version")(version)
     app.command(help="更新 Ani2xcur", name="update")(update)
     app.command(help="列出 Ani2xcur 所使用的环境变量", name="env")(env)

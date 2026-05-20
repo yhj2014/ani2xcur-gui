@@ -109,6 +109,12 @@ def win_cursor_to_x11(
 
         # 转换鼠标指针文件
         logger.debug("要进行转换的鼠标指针列表: %s", win2x_path_list)
+        logger.debug(
+            "Windows -> Linux 转换计划: convert=%s, complete=%s, links=%s",
+            len(win2x_path_list),
+            len(completed_cursor_list),
+            len(link_file_list),
+        )
         for name, src, dst in tqdm(win2x_path_list, desc="转换鼠标指针文件"):
             win2x_args["input_file"] = src
             win2x_args["output_path"] = cursors_dir
@@ -206,18 +212,43 @@ def _normalize_xcursor_theme_files(
         xcursor_sizes (list[int] | None): 目标名义尺寸列表。
     """
     target_sizes = DEFAULT_XCURSOR_SIZES if xcursor_sizes is None else xcursor_sizes
+    normalized_count = 0
+    skipped_count = 0
+    logger.debug("开始补齐主题 Xcursor 尺寸: cursors_dir='%s', target_sizes=%s", cursors_dir, target_sizes)
     for cursor_file in cursors_dir.iterdir():
-        if cursor_file.is_symlink() or not cursor_file.is_file():
+        if cursor_file.is_symlink():
+            skipped_count += 1
+            logger.debug("跳过 Xcursor 尺寸补齐软链接: '%s'", cursor_file)
+            continue
+        if not cursor_file.is_file():
+            skipped_count += 1
+            logger.debug("跳过 Xcursor 尺寸补齐非文件路径: '%s'", cursor_file)
             continue
 
         try:
             frames = parse_blob(cursor_file.read_bytes())
+            source_sizes = sorted({cursor.nominal for frame in frames for cursor in frame.images})
             normalize_xcursor_sizes(frames, target_sizes)
         except ValueError as e:
+            skipped_count += 1
             logger.debug("跳过无法补齐尺寸的光标文件: '%s', 原因: %s", cursor_file, e)
             continue
 
         cursor_file.write_bytes(to_xcursor(frames))
+        normalized_count += 1
+        target_summary = sorted({cursor.nominal for frame in frames for cursor in frame.images})
+        logger.debug(
+            "补齐 Xcursor 文件尺寸完成: '%s', source_sizes=%s, target_sizes=%s",
+            cursor_file,
+            source_sizes,
+            target_summary,
+        )
+    logger.debug(
+        "主题 Xcursor 尺寸补齐完成: cursors_dir='%s', normalized=%s, skipped=%s",
+        cursors_dir,
+        normalized_count,
+        skipped_count,
+    )
 
 
 def x11_cursor_to_win(
@@ -262,6 +293,7 @@ def x11_cursor_to_win(
 
         # 转换鼠标指针文件
         logger.debug("要进行转换的鼠标指针列表: %s", x2win_path_list)
+        logger.debug("Linux -> Windows 转换计划: convert=%s", len(x2win_path_list))
         for name, src, dst in tqdm(x2win_path_list, desc="转换鼠标指针文件"):
             x2win_args["input_file"] = src
             x2win_args["output_path"] = cursors_dir

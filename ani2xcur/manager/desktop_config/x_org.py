@@ -3,7 +3,15 @@
 import re
 from pathlib import Path
 
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from ani2xcur.logger import get_logger
 from ani2xcur.utils import safe_convert_to_int
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 X_RESOURCES_PATH = Path("~/.Xresources").expanduser()
 """X resources 配置文件路径"""
@@ -21,6 +29,7 @@ def read_x_resources_config(
     """
     config = {}
 
+    logger.debug("读取 Xresources 配置文件: '%s'", config_path)
     with open(config_path, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
@@ -37,6 +46,7 @@ def read_x_resources_config(
 
                 config[key] = value
 
+    logger.debug("读取 Xresources 配置完成: keys=%s", sorted(config))
     return config
 
 
@@ -83,6 +93,7 @@ def write_x_resources_config(
 
     with open(config_path, "w", encoding="utf-8") as f:
         f.writelines(new_lines)
+    logger.debug("写入 Xresources 配置文件: '%s', updates=%s", config_path, updates)
 
 
 def get_x_resources_cursor_theme() -> str | None:
@@ -92,10 +103,13 @@ def get_x_resources_cursor_theme() -> str | None:
         (str | None): 当前使用的鼠标指针名称
     """
     if not X_RESOURCES_PATH.is_file():
+        logger.debug("Xresources 配置文件不存在, 无法读取光标主题: '%s'", X_RESOURCES_PATH)
         return None
 
     config = read_x_resources_config(X_RESOURCES_PATH)
-    return config.get("Xcursor.theme")
+    result = config.get("Xcursor.theme")
+    logger.debug("Xresources 当前光标主题读取结果: %r", result)
+    return result
 
 
 def get_x_resources_cursor_size() -> int | None:
@@ -105,10 +119,13 @@ def get_x_resources_cursor_size() -> int | None:
         (int | None): 当前使用的鼠标指针大小
     """
     if not X_RESOURCES_PATH.is_file():
+        logger.debug("Xresources 配置文件不存在, 无法读取光标大小: '%s'", X_RESOURCES_PATH)
         return None
 
     config = read_x_resources_config(X_RESOURCES_PATH)
-    return safe_convert_to_int(config.get("Xcursor.size"))
+    result = safe_convert_to_int(config.get("Xcursor.size"))
+    logger.debug("Xresources 当前光标大小读取结果: %r", result)
+    return result
 
 
 def set_x_resources_cursor_theme(
@@ -120,6 +137,7 @@ def set_x_resources_cursor_theme(
         cursor_name (str): 要设置的鼠标指针配置名称
     """
     X_RESOURCES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    logger.debug("写入 Xresources 光标主题: %s", cursor_name)
     write_x_resources_config(config_path=X_RESOURCES_PATH, updates={"Xcursor.theme": cursor_name})
 
 
@@ -132,4 +150,5 @@ def set_x_resources_cursor_size(
         cursor_size (int): 要设置的鼠标指针大小
     """
     X_RESOURCES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    logger.debug("写入 Xresources 光标大小: %s", cursor_size)
     write_x_resources_config(config_path=X_RESOURCES_PATH, updates={"Xcursor.size": str(cursor_size)})

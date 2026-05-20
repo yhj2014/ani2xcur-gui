@@ -116,6 +116,7 @@ def _load_library(name: str) -> Any | None:
         return None
 
     try:
+        logger.debug("加载 Xcursor 刷新依赖库: '%s' -> '%s'", name, library_path)
         return ctypes.CDLL(library_path)
     except OSError as e:
         logger.debug("加载 Xcursor 刷新依赖库失败: '%s' -> '%s', 错误: %s", name, library_path, e)
@@ -161,19 +162,24 @@ def _is_wayland_session() -> bool:
 
 def _iter_theme_cursor_names(cursor_name: str | None) -> Iterator[str]:
     if cursor_name is None:
+        logger.debug("未提供 Xcursor 主题名称, 不读取主题自带光标文件列表")
         return
 
     for theme_path in _XCURSOR_THEME_PATHS:
         cursors_dir = theme_path / cursor_name / "cursors"
         if not cursors_dir.is_dir():
+            logger.debug("Xcursor 主题目录不存在, 跳过: '%s'", cursors_dir)
             continue
 
         try:
+            found_count = 0
             for cursor_file in cursors_dir.iterdir():
                 if cursor_file.name.startswith("."):
                     continue
                 if cursor_file.is_file() or cursor_file.is_symlink():
+                    found_count += 1
                     yield cursor_file.name
+            logger.debug("读取 Xcursor 主题光标文件列表完成: '%s', count=%s", cursors_dir, found_count)
         except OSError as e:
             logger.debug("读取 Xcursor 主题光标文件列表失败: '%s', 错误: %s", cursors_dir, e)
 
@@ -195,6 +201,7 @@ def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None
         cursor_name (str | None): 要应用的鼠标指针主题名称
         cursor_size (int | None): 要应用的鼠标指针大小
     """
+    logger.debug("准备刷新 X11/Xcursor 光标: cursor_name=%r, cursor_size=%r", cursor_name, cursor_size)
     if sys.platform == "win32":
         logger.debug("当前平台为 Windows, 跳过 X11 鼠标指针刷新")
         return
@@ -203,6 +210,7 @@ def apply_x_cursor_theme(cursor_name: str | None, cursor_size: int | None = None
     if not display_name:
         logger.debug("环境变量 DISPLAY 为空, 跳过 X11 鼠标指针刷新")
         return
+    logger.debug("使用 DISPLAY 刷新 X11/Xcursor 光标: %s", display_name)
 
     if _is_wayland_session():
         return

@@ -50,11 +50,13 @@ def remove_files(
     try:
         if path.is_file() or path.is_symlink():
             # 处理文件或符号链接
+            logger.debug("删除文件或软链接: '%s'", path)
             os.chmod(path, stat.S_IWRITE)
             path.unlink()
 
         elif path.is_dir():
             # 处理文件夹
+            logger.debug("删除目录: '%s'", path)
             shutil.rmtree(path, onerror=_handle_remove_readonly)
 
     except OSError as e:
@@ -104,14 +106,17 @@ def copy_files(
         # 复制操作
         if src_path.is_file():
             # copy2 会尽量保留文件元数据
+            logger.debug("复制文件: '%s' -> '%s'", src_path, dst_file)
             shutil.copy2(src_path, dst_file)
         else:
             # symlinks=True: 保留软链接本身而非复制指向的内容
             # dirs_exist_ok=True: 实现合并逻辑，如果目标目录已存在则覆盖同名文件
+            logger.debug("复制目录: '%s' -> '%s'", src_path, dst_file)
             try:
                 shutil.copytree(src_path, dst_file, symlinks=True, dirs_exist_ok=True)
             except shutil.Error:
                 # Linux 中遇到已存在的软链接会导致失败, 则使用 symlinks=False 重试
+                logger.debug("保留软链接复制目录失败, 改为复制软链接目标内容: '%s' -> '%s'", src_path, dst_file)
                 shutil.copytree(src_path, dst_file, symlinks=False, dirs_exist_ok=True)
 
     except PermissionError as e:
@@ -145,9 +150,11 @@ def get_file_list(
     """
 
     if not path or not path.exists():
+        logger.debug("获取文件列表时路径不存在: '%s'", path)
         return []
 
     if path.is_file():
+        logger.debug("获取文件列表时输入为文件: '%s'", path)
         return [path.resolve() if resolve else path.absolute()]
 
     base_depth = len(path.resolve().parts)
@@ -183,6 +190,7 @@ def get_file_list(
 
                 dir_pbar.update(1)
 
+    logger.debug("获取文件列表完成: path='%s', count=%s, include_dirs=%s, max_depth=%s", path, len(file_list), include_dirs, max_depth)
     return file_list
 
 

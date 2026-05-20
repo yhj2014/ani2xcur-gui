@@ -33,6 +33,27 @@ logger = get_logger(
 )
 
 
+def _frames_debug_summary(frames: list[CursorFrame]) -> dict[str, object]:
+    """生成光标帧的调试摘要。
+
+    Args:
+        frames (list[CursorFrame]): 光标帧列表。
+    Returns:
+        dict[str, object]: 可写入日志的光标摘要。
+    """
+    nominal_sizes = sorted({image.nominal for frame in frames for image in frame.images})
+    actual_sizes = sorted({image.image.size for frame in frames for image in frame.images})
+    hotspots = sorted({image.hotspot for frame in frames for image in frame.images})
+    delays = sorted({round(frame.delay, 4) for frame in frames})
+    return {
+        "frame_count": len(frames),
+        "nominal_sizes": nominal_sizes,
+        "actual_sizes": actual_sizes,
+        "hotspots": hotspots[:20],
+        "delay_seconds": delays[:20],
+    }
+
+
 class Win2xcurArgs(TypedDict, total=False):
     """Windows 光标转换为 Xcursor 的参数。"""
 
@@ -85,9 +106,20 @@ def win2xcur_process(
     if save_name is None:
         save_name = input_file.stem
 
+    logger.debug(
+        "开始 Windows -> Xcursor 转换: input='%s', output_path='%s', save_name=%r, scale=%r, shadow=%r, xcursor_sizes=%r",
+        input_file,
+        output_path,
+        save_name,
+        scale,
+        shadow,
+        xcursor_sizes,
+    )
     frames = _read_cursor_file(input_file)
+    logger.debug("读取 Windows 光标文件完成: %s", _frames_debug_summary(frames))
     if scale:
         scale_frames(frames, scale=scale)
+        logger.debug("缩放光标帧完成: scale=%s, summary=%s", scale, _frames_debug_summary(frames))
     if shadow:
         add_shadow_to_frames(
             frames,
@@ -98,10 +130,22 @@ def win2xcur_process(
             xoffset=0.05 if shadow_x is None else shadow_x,
             yoffset=0.05 if shadow_y is None else shadow_y,
         )
+        logger.debug(
+            "添加光标阴影完成: opacity=%r, radius=%r, sigma=%r, x=%r, y=%r, color=%r, summary=%s",
+            shadow_opacity,
+            shadow_radius,
+            shadow_sigma,
+            shadow_x,
+            shadow_y,
+            shadow_color,
+            _frames_debug_summary(frames),
+        )
     normalize_xcursor_sizes(frames, DEFAULT_XCURSOR_SIZES if xcursor_sizes is None else xcursor_sizes)
+    logger.debug("补齐 Xcursor 尺寸完成: %s", _frames_debug_summary(frames))
 
     output_file = output_path / save_name
     save_bytes_to_file(to_xcursor(frames), output_file)
+    logger.debug("Windows -> Xcursor 转换完成: output='%s'", output_file)
     return output_file
 
 
@@ -133,20 +177,33 @@ def x2wincur_process(
     if save_name is None:
         save_name = input_file.stem
 
+    logger.debug(
+        "开始 Xcursor -> Windows 转换: input='%s', output_path='%s', save_name=%r, scale=%r",
+        input_file,
+        output_path,
+        save_name,
+        scale,
+    )
     frames = _read_cursor_file(input_file)
+    logger.debug("读取 Xcursor 光标文件完成: %s", _frames_debug_summary(frames))
     if scale:
         scale_frames(frames, scale=scale)
+        logger.debug("缩放光标帧完成: scale=%s, summary=%s", scale, _frames_debug_summary(frames))
 
     extension, result = to_smart(frames)
     output_file = output_path / f"{save_name}{extension}"
     save_bytes_to_file(result, output_file)
+    logger.debug("Xcursor -> Windows 转换完成: output='%s', extension='%s'", output_file, extension)
     return output_file
 
 
 def _read_cursor_file(input_file: Path) -> list[CursorFrame]:
+    logger.debug("读取光标文件: '%s'", input_file)
     blob = open_file_as_bytes(input_file)
     try:
-        return parse_blob(blob)
+        frames = parse_blob(blob)
+        logger.debug("解析光标文件完成: input='%s', summary=%s", input_file, _frames_debug_summary(frames))
+        return frames
     except ValueError:
         logger.error("不支持的光标文件格式: '%s'", input_file.suffix)
         raise

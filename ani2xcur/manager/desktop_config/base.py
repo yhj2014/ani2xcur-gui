@@ -3,6 +3,15 @@
 import os
 from typing import NamedTuple
 
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from ani2xcur.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
+
 
 class IntRange(NamedTuple):
     """整数范围"""
@@ -34,6 +43,7 @@ def get_linux_session_type() -> str | None:
         str | None: 当前图形会话类型, 无法获取时返回 None。
     """
     session_type = os.environ.get("XDG_SESSION_TYPE", "").strip().casefold()
+    logger.debug("当前 XDG_SESSION_TYPE=%r", session_type or None)
     return session_type or None
 
 
@@ -45,11 +55,20 @@ def is_wayland_session() -> bool:
     """
     session_type = get_linux_session_type()
     if session_type == "wayland":
+        logger.debug("检测到明确的 Wayland 会话")
         return True
     if session_type == "x11":
+        logger.debug("检测到明确的 X11 会话")
         return False
 
-    return bool(os.environ.get("WAYLAND_DISPLAY")) and bool(os.environ.get("DISPLAY"))
+    result = bool(os.environ.get("WAYLAND_DISPLAY")) and bool(os.environ.get("DISPLAY"))
+    logger.debug(
+        "会话类型未知, 根据 DISPLAY=%r 和 WAYLAND_DISPLAY=%r 判断 Wayland/XWayland=%s",
+        os.environ.get("DISPLAY"),
+        os.environ.get("WAYLAND_DISPLAY"),
+        result,
+    )
+    return result
 
 
 def check_windows_cursor_size_value(

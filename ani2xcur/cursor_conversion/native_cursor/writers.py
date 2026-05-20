@@ -6,6 +6,7 @@ from io import BytesIO
 
 from PIL import Image
 
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame
 from ani2xcur.cursor_conversion.native_cursor.parsers import (
     ANIH_HEADER,
@@ -20,6 +21,13 @@ from ani2xcur.cursor_conversion.native_cursor.parsers import (
     XCURSOR_MAGIC,
     XCURSOR_TOC_CHUNK,
     XCURSOR_VERSION,
+)
+from ani2xcur.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
 )
 
 ANI_ICON_FLAG = 0x1
@@ -58,6 +66,12 @@ def to_xcursor(frames: list[CursorFrame]) -> bytes:
                 int(round(frame.delay * 1000)),
             )
             chunks.append((XCURSOR_IMAGE_TYPE, cursor.nominal, header + _premultiply_rgba_to_bgra(image.tobytes())))
+    logger.debug(
+        "序列化 Xcursor 文件: frame_count=%s, chunk_count=%s, nominal_sizes=%s",
+        len(frames),
+        len(chunks),
+        sorted({chunk_subtype for _, chunk_subtype, _ in chunks}),
+    )
 
     header = XCURSOR_FILE_HEADER.pack(
         XCURSOR_MAGIC,
@@ -115,6 +129,7 @@ def to_cur(frame: CursorFrame) -> bytes:
         )
         offset += len(png_blob)
 
+    logger.debug("序列化 CUR 文件: image_count=%s", len(frame.images))
     return b"".join([header, *directory, *image_data])
 
 
@@ -150,6 +165,7 @@ def to_ani(frames: list[CursorFrame]) -> bytes:
             rate_chunk,
         ]
     )
+    logger.debug("序列化 ANI 文件: frame_count=%s, rates=%s", len(frames), rates)
     return RIFF_HEADER.pack(b"RIFF", len(body) + 4, b"ACON") + body
 
 
@@ -162,7 +178,9 @@ def to_smart(frames: list[CursorFrame]) -> tuple[str, bytes]:
         tuple[str, bytes]: 输出扩展名和对应的二进制内容。
     """
     if len(frames) == 1:
+        logger.debug("自动选择 Windows 光标输出格式: .cur")
         return ".cur", to_cur(frames[0])
+    logger.debug("自动选择 Windows 光标输出格式: .ani")
     return ".ani", to_ani(frames)
 
 

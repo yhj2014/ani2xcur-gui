@@ -78,28 +78,34 @@ def extract_archive(
     extract_to.mkdir(parents=True, exist_ok=True)
 
     logger.info("将 '%s' 解压到 '%s' 中", archive_path, extract_to)
+    logger.debug("解压压缩包: archive='%s', extract_to='%s', format='%s'", archive_path, extract_to, name)
 
     if name.endswith(".zip"):
         with zipfile.ZipFile(archive_path, "r") as zip_ref:
+            logger.debug("ZIP 压缩包条目数量: %s", len(zip_ref.infolist()))
             zip_ref.extractall(extract_to)
 
     if name.endswith(".tar"):
         with tarfile.open(archive_path, "r") as tar_ref:
+            logger.debug("TAR 压缩包条目数量: %s", len(tar_ref.getmembers()))
             tar_ref.extractall(extract_to)
         return
 
     if name.endswith(".tar.gz"):
         with tarfile.open(archive_path, "r:gz") as tar_ref:
+            logger.debug("TAR.GZ 压缩包条目数量: %s", len(tar_ref.getmembers()))
             tar_ref.extractall(extract_to)
             return
 
     if name.endswith(".tar.bz2"):
         with tarfile.open(archive_path, "r:bz2") as tar_ref:
+            logger.debug("TAR.BZ2 压缩包条目数量: %s", len(tar_ref.getmembers()))
             tar_ref.extractall(extract_to)
         return
 
     if name.endswith(".tar.xz"):
         with tarfile.open(archive_path, "r:xz") as tar_ref:
+            logger.debug("TAR.XZ 压缩包条目数量: %s", len(tar_ref.getmembers()))
             tar_ref.extractall(extract_to)
         return
 
@@ -119,11 +125,13 @@ def extract_archive(
 
     if name.endswith(".7z"):
         with py7zr.SevenZipFile(archive_path, mode="r") as archive:
+            logger.debug("7Z 压缩包条目数量: %s", len(archive.getnames()))
             archive.extractall(path=extract_to)
         return
 
     if name.endswith(".rar"):
         with rarfile.RarFile(archive_path, mode="r") as archive:
+            logger.debug("RAR 压缩包条目数量: %s", len(archive.infolist()))
             archive.extractall(path=extract_to)
         return
 
@@ -158,6 +166,7 @@ def create_archive(
     archive_path.parent.mkdir(parents=True, exist_ok=True)
 
     logger.info("将 '%s' 压缩并保存到 '%s' 中", sources, archive_path)
+    logger.debug("创建压缩包: sources=%s, count=%s, archive='%s', format='%s'", sources, len(sources), archive_path, name)
 
     # zip
     if name.endswith(".zip"):

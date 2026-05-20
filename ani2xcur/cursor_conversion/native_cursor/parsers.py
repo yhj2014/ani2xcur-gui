@@ -9,7 +9,15 @@ from typing import Iterable
 
 from PIL import Image
 
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame, CursorImage
+from ani2xcur.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 CUR_MAGIC = b"\x00\x00\x02\x00"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
@@ -41,10 +49,13 @@ def parse_blob(blob: bytes) -> list[CursorFrame]:
         ValueError: 光标文件格式不受支持或文件内容损坏时抛出。
     """
     if blob.startswith(CUR_MAGIC):
+        logger.debug("识别到 Windows CUR 光标文件")
         return parse_cur(blob)
     if _is_ani(blob):
+        logger.debug("识别到 Windows ANI 光标文件")
         return parse_ani(blob)
     if blob.startswith(XCURSOR_MAGIC):
+        logger.debug("识别到 Xcursor 光标文件")
         return parse_xcursor(blob)
     raise ValueError("Unsupported cursor file format")
 
@@ -67,6 +78,7 @@ def parse_cur(blob: bytes) -> list[CursorFrame]:
         raise ValueError("Not a CUR file")
     if image_count <= 0:
         raise ValueError("CUR file does not contain images")
+    logger.debug("解析 CUR 文件: image_count=%s", image_count)
 
     entries_start = ICON_DIR.size
     entries_end = entries_start + image_count * ICON_DIR_ENTRY.size
@@ -94,6 +106,7 @@ def parse_cur(blob: bytes) -> list[CursorFrame]:
             )
         )
 
+    logger.debug("CUR 文件解析完成: sizes=%s", [image.image.size for image in images])
     return [CursorFrame(images=images)]
 
 
@@ -147,6 +160,8 @@ def parse_ani(blob: bytes) -> list[CursorFrame]:
 
     frame_count = frame_count or len(icon_frames)
     step_count = step_count or frame_count
+    has_order_chunk = order is not None
+    has_delay_chunk = delays is not None
     order = list(range(frame_count)) if order is None else order
     delays = [display_rate for _ in range(step_count)] if delays is None else delays
 
@@ -155,6 +170,14 @@ def parse_ani(blob: bytes) -> list[CursorFrame]:
     if len(delays) != step_count:
         raise ValueError(f"Wrong animation rate size: {len(delays)}, expected {step_count}")
 
+    logger.debug(
+        "解析 ANI 文件: frame_count=%s, step_count=%s, icon_frames=%s, has_seq=%s, has_rate=%s",
+        frame_count,
+        step_count,
+        len(icon_frames),
+        has_order_chunk,
+        has_delay_chunk,
+    )
     sequence: list[CursorFrame] = []
     for frame_index, delay in zip(order, delays):
         if frame_index >= len(icon_frames):
@@ -163,6 +186,7 @@ def parse_ani(blob: bytes) -> list[CursorFrame]:
         frame.delay = delay / 60
         sequence.append(frame)
 
+    logger.debug("ANI 文件解析完成: sequence_frames=%s", len(sequence))
     return sequence
 
 
@@ -194,6 +218,7 @@ def parse_xcursor(blob: bytes) -> list[CursorFrame]:
     for _ in range(toc_size):
         chunks.append(XCURSOR_TOC_CHUNK.unpack_from(blob, offset))
         offset += XCURSOR_TOC_CHUNK.size
+    logger.debug("解析 Xcursor 文件: toc_size=%s", toc_size)
 
     images_by_size: dict[int, list[tuple[CursorImage, float]]] = defaultdict(list)
     for chunk_type, chunk_subtype, position in chunks:
@@ -224,6 +249,7 @@ def parse_xcursor(blob: bytes) -> list[CursorFrame]:
 
     if not images_by_size:
         raise ValueError("Xcursor file does not contain images")
+    logger.debug("Xcursor 文件尺寸集合: %s", sorted(images_by_size))
 
     frame_counts = {len(images) for images in images_by_size.values()}
     if len(frame_counts) != 1:
@@ -238,6 +264,7 @@ def parse_xcursor(blob: bytes) -> list[CursorFrame]:
             raise ValueError("Xcursor animations must use the same delay for every size in a frame")
         frames.append(CursorFrame(images=images, delay=frame_items[0][1]))
 
+    logger.debug("Xcursor 文件解析完成: frame_count=%s", len(frames))
     return frames
 
 

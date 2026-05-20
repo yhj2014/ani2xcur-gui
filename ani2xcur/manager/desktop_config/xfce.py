@@ -8,7 +8,15 @@
 import shutil
 
 from ani2xcur.cmd import run_cmd
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from ani2xcur.logger import get_logger
 from ani2xcur.utils import safe_convert_to_int
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 XFCONF_QUERY = "xfconf-query"
 XSETTINGS_CHANNEL = "xsettings"
@@ -18,15 +26,19 @@ CURSOR_SIZE_PROPERTY = "/Gtk/CursorThemeSize"
 
 def _xfconf_query_executable() -> str | None:
     if shutil.which(XFCONF_QUERY):
+        logger.debug("找到 xfconf-query 可执行文件")
         return XFCONF_QUERY
+    logger.debug("未找到 xfconf-query")
     return None
 
 
 def _set_xfce_property(property_name: str, property_type: str, value: str) -> None:
     executable = _xfconf_query_executable()
     if executable is None:
+        logger.debug("跳过 Xfce 属性写入: property=%s, value=%s", property_name, value)
         return
 
+    logger.debug("写入 Xfce 属性: property=%s, type=%s, value=%s", property_name, property_type, value)
     run_cmd(
         [
             executable,
@@ -72,8 +84,10 @@ def get_xfce_cursor_theme() -> str | None:
 
     result = result.strip()
     if result == "":
+        logger.debug("Xfce 当前光标主题读取结果为空")
         return None
 
+    logger.debug("Xfce 当前光标主题读取结果: %s", result)
     return result
 
 
@@ -104,11 +118,14 @@ def get_xfce_cursor_size() -> int | None:
 
     result = result.strip()
     if result == "":
+        logger.debug("Xfce 当前光标大小读取结果为空")
         return None
 
     cursor_size = safe_convert_to_int(result)
     if isinstance(cursor_size, int):
+        logger.debug("Xfce 当前光标大小读取结果: %s", cursor_size)
         return cursor_size
+    logger.debug("Xfce 当前光标大小读取结果不是整数: %r", result)
     return None
 
 

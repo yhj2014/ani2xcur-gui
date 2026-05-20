@@ -2,8 +2,15 @@
 
 from pathlib import Path
 
+from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from ani2xcur.logger import get_logger
 from ani2xcur.utils import safe_convert_to_int
 
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 GTK_XSETTINGS_PATH = Path("~/.config/xsettingsd/xsettingsd.conf").expanduser()
 """GTK xsettings 配置文件路径"""
@@ -21,6 +28,7 @@ def read_gtk_xsettings_config(
     """
     config: dict[str, str | int] = {}
 
+    logger.debug("读取 GTK xsettings 配置文件: '%s'", config_path)
     with open(config_path, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
@@ -44,6 +52,7 @@ def read_gtk_xsettings_config(
 
             config[key] = value
 
+    logger.debug("读取 GTK xsettings 配置完成: keys=%s", sorted(config))
     return config
 
 
@@ -64,6 +73,7 @@ def write_gtk_xsettings_config(
                 file.write(f'{key} "{value}"\n')
             else:
                 file.write(f"{key} {value}\n")
+    logger.debug("写入 GTK xsettings 配置文件: '%s', keys=%s", config_path, sorted(config))
 
 
 def get_gtk_xsettings_cursor_theme() -> str | None:
@@ -73,10 +83,12 @@ def get_gtk_xsettings_cursor_theme() -> str | None:
         (str | None): 当前使用的鼠标指针主题名称
     """
     if not GTK_XSETTINGS_PATH.is_file():
+        logger.debug("GTK xsettings 配置文件不存在, 无法读取光标主题: '%s'", GTK_XSETTINGS_PATH)
         return None
 
     config = read_gtk_xsettings_config(GTK_XSETTINGS_PATH)
     theme = config.get("Gtk/CursorThemeName")
+    logger.debug("GTK xsettings 当前光标主题读取结果: %r", theme)
     return theme if isinstance(theme, str) else None
 
 
@@ -87,10 +99,12 @@ def get_gtk_xsettings_cursor_size() -> int | None:
         (int | None): 当前使用的鼠标指针大小
     """
     if not GTK_XSETTINGS_PATH.is_file():
+        logger.debug("GTK xsettings 配置文件不存在, 无法读取光标大小: '%s'", GTK_XSETTINGS_PATH)
         return None
 
     config = read_gtk_xsettings_config(GTK_XSETTINGS_PATH)
     size = safe_convert_to_int(config.get("Gtk/CursorThemeSize"))
+    logger.debug("GTK xsettings 当前光标大小读取结果: %r", size)
     return size if isinstance(size, int) else None
 
 
@@ -109,6 +123,7 @@ def set_gtk_xsettings_cursor_theme(
         config = {}
 
     config["Gtk/CursorThemeName"] = cursor_name
+    logger.debug("写入 GTK xsettings 光标主题: %s", cursor_name)
     write_gtk_xsettings_config(GTK_XSETTINGS_PATH, config)
 
 
@@ -127,4 +142,5 @@ def set_gtk_xsettings_cursor_size(
         config = {}
 
     config["Gtk/CursorThemeSize"] = str(cursor_size)
+    logger.debug("写入 GTK xsettings 光标大小: %s", cursor_size)
     write_gtk_xsettings_config(GTK_XSETTINGS_PATH, config)

@@ -59,6 +59,7 @@ _✨一站式鼠标指针转换与管理工具_
     - [从系统中卸载 ImageMagick](#从系统中卸载-imagemagick)
   - [更新 Ani2xcur CLI](#更新-ani2xcur-cli)
   - [查看 Ani2xcur CLI 使用的环境变量](#查看-ani2xcur-cli-使用的环境变量)
+  - [调试日志](#调试日志)
   - [查看 Ani2xcur CLI 版本信息](#查看-ani2xcur-cli-版本信息)
 - [使用的项目](#使用的项目)
 - [许可证](#许可证)
@@ -251,6 +252,22 @@ ani2xcur update
 ```bash
 ani2xcur env
 ```
+
+
+## 调试日志
+临时排查转换、安装或桌面刷新问题时，可以使用全局 `--debug` 选项输出关键链路日志：
+
+```bash
+ani2xcur --debug cursor set size 32 > log.txt 2>&1
+```
+
+也可以继续使用环境变量开启 debug 日志：
+
+```bash
+ANI2XCUR_LOGGER_LEVEL=10 ani2xcur cursor set theme Blue > log.txt 2>&1
+```
+
+调试日志会记录命令、会话类型、Xcursor 相关环境变量和转换摘要，不会输出完整环境变量或光标文件二进制内容。
 
 
 ## 查看 Ani2xcur CLI 版本信息
