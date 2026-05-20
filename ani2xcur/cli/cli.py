@@ -1,14 +1,68 @@
 """CLI 构建工具"""
 
+import logging
+from collections.abc import Callable
+from typing import Any
+
 import click
 import typer
-from typer.core import TyperGroup
+from typer.core import TyperCommand, TyperGroup
+
+from ani2xcur.config import LOGGER_NAME
+
+
+DEBUG_OPTION_HELP = "输出调试日志, 便于排查转换、安装和桌面刷新问题"
+
+
+def _debug_option_callback(ctx: click.Context, _param: click.Parameter, value: bool) -> None:
+    """启用调试日志输出。"""
+    if value and not ctx.resilient_parsing:
+        app_logger = logging.getLogger(LOGGER_NAME)
+        app_logger.setLevel(logging.DEBUG)
+        app_logger.debug("已启用 debug 日志")
+
+
+def _make_debug_option() -> click.Option:
+    """创建可挂载到任意命令层级的 debug 选项。"""
+    return click.Option(
+        ["--debug"],
+        is_flag=True,
+        is_eager=True,
+        expose_value=False,
+        help=DEBUG_OPTION_HELP,
+        callback=_debug_option_callback,
+    )
+
+
+def _has_debug_option(params: list[click.Parameter] | None) -> bool:
+    """检查命令参数中是否已经存在 debug 选项。"""
+    return any(isinstance(param, click.Option) and "--debug" in param.opts for param in params or [])
+
+
+def _with_debug_option(params: list[click.Parameter] | None) -> list[click.Parameter]:
+    """为命令参数列表补齐 debug 选项。"""
+    normalized_params = list(params or [])
+    if _has_debug_option(normalized_params):
+        return normalized_params
+    return [_make_debug_option(), *normalized_params]
+
+
+class DebugTyperCommand(TyperCommand):
+    """默认带有 --debug 选项的 Typer 命令。"""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["params"] = _with_debug_option(kwargs.get("params"))
+        super().__init__(*args, **kwargs)
 
 
 class AlphabeticalMixedGroup(TyperGroup):
     """
     自定义的命令组
     """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs["params"] = _with_debug_option(kwargs.get("params"))
+        super().__init__(*args, **kwargs)
 
     def list_commands(
         self,
@@ -24,6 +78,22 @@ class AlphabeticalMixedGroup(TyperGroup):
         return sorted(self.commands.keys())
 
 
+class DebugOptionTyper(typer.Typer):
+    """默认让所有注册命令都带有 --debug 选项的 Typer 应用。"""
+
+    def command(self, *args: Any, **kwargs: Any) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        """注册默认带有 debug 选项的命令。
+
+        Args:
+            *args (Any): 传递给 Typer command 注册方法的位置参数。
+            **kwargs (Any): 传递给 Typer command 注册方法的关键字参数。
+        Returns:
+            Callable[[Callable[..., Any]], Callable[..., Any]]: 命令装饰器。
+        """
+        kwargs.setdefault("cls", DebugTyperCommand)
+        return super().command(*args, **kwargs)
+
+
 def typer_factory(
     help: str,  # pylint: disable=redefined-builtin
 ) -> typer.Typer:
@@ -34,7 +104,7 @@ def typer_factory(
     Returns:
         typer.Typer: typer 装饰器
     """
-    return typer.Typer(
+    return DebugOptionTyper(
         help=help,
         add_completion=True,  # 启用自动补全功能
         no_args_is_help=True,  # 不带参数运行时显示帮助信息
