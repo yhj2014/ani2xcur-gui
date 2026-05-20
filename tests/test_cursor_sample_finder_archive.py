@@ -52,3 +52,23 @@ def test_archive_roundtrip_and_find_desktop_entry_file(linux_cursor_dir: Path, t
 
     assert found is not None
     assert found.name in {"cursor.theme", "index.theme"}
+
+
+def test_create_archive_accepts_single_directory_path(windows_cursor_dir: Path, tmp_path: Path):
+    archive_path = tmp_path / "single-dir.zip"
+    extract_to = tmp_path / "extract-dir"
+
+    create_archive(windows_cursor_dir, archive_path)
+    extract_archive(archive_path, extract_to)
+
+    assert (extract_to / windows_cursor_dir.name / "AutoSetup.inf").is_file()
+
+
+def test_create_archive_accepts_single_file_path(windows_inf_file: Path, tmp_path: Path):
+    archive_path = tmp_path / "single-file.zip"
+    extract_to = tmp_path / "extract-file"
+
+    create_archive(windows_inf_file, archive_path)
+    extract_archive(archive_path, extract_to)
+
+    assert (extract_to / windows_inf_file.name).is_file()
