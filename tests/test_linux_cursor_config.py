@@ -100,6 +100,9 @@ def test_set_linux_cursor_theme_writes_all_desktop_configs_on_wayland(monkeypatc
     calls = _patch_linux_cursor_theme_setters(monkeypatch)
     _set_kde_wayland_env(monkeypatch)
     monkeypatch.setattr(linux_cur_manager, "list_linux_cursors", lambda: [{"name": "Blue", "cursor_files": [], "install_paths": []}])
+    monkeypatch.setattr(linux_cur_manager, "_get_live_cursor_size", lambda: 32)
+    monkeypatch.setattr(linux_cur_manager, "refresh_lxqt_cursor_session", lambda name, size: calls.append("refresh_lxqt_cursor_session"))
+    monkeypatch.setattr(linux_cur_manager, "refresh_kde_cursor_session", lambda name, size: calls.append("refresh_kde_cursor_session"))
 
     linux_cur_manager.set_linux_cursor_theme("Blue")
 
@@ -116,12 +119,17 @@ def test_set_linux_cursor_theme_writes_all_desktop_configs_on_wayland(monkeypatc
         "set_xdg_cursor_theme",
         "set_xfce_cursor_theme",
         "set_gtk_xsettings_cursor_theme",
+        "refresh_lxqt_cursor_session",
+        "refresh_kde_cursor_session",
     ]
 
 
 def test_set_linux_cursor_size_writes_all_desktop_configs_on_wayland(monkeypatch):
     calls = _patch_linux_cursor_size_setters(monkeypatch)
     _set_kde_wayland_env(monkeypatch)
+    monkeypatch.setattr(linux_cur_manager, "_get_live_cursor_theme", lambda: "Blue")
+    monkeypatch.setattr(linux_cur_manager, "refresh_lxqt_cursor_session", lambda name, size: calls.append("refresh_lxqt_cursor_session"))
+    monkeypatch.setattr(linux_cur_manager, "refresh_kde_cursor_session", lambda name, size: calls.append("refresh_kde_cursor_session"))
 
     linux_cur_manager.set_linux_cursor_size(32)
 
@@ -137,4 +145,6 @@ def test_set_linux_cursor_size_writes_all_desktop_configs_on_wayland(monkeypatch
         "set_x_resources_cursor_size",
         "set_xfce_cursor_size",
         "set_gtk_xsettings_cursor_size",
+        "refresh_lxqt_cursor_session",
+        "refresh_kde_cursor_session",
     ]

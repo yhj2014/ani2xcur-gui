@@ -49,12 +49,14 @@ from ani2xcur.manager.desktop_config.gtk import (
     get_gtk4_cursor_theme,
 )
 from ani2xcur.manager.desktop_config.kde import (
+    refresh_kde_cursor_session,
     set_kde_cursor_size,
     set_kde_cursor_theme,
     get_kde_cursor_size,
     get_kde_cursor_theme,
 )
 from ani2xcur.manager.desktop_config.lxqt import (
+    refresh_lxqt_cursor_session,
     set_lxqt_cursor_size,
     set_lxqt_cursor_theme,
     get_lxqt_cursor_size,
@@ -221,6 +223,56 @@ def list_linux_cursors() -> CursorSchemesList:
     return cursors_list
 
 
+def _first_config_value(*values: str | int | None) -> str | int | None:
+    for value in values:
+        if value is not None:
+            return value
+    return None
+
+
+def _get_live_cursor_theme() -> str | None:
+    xdg_theme = get_xdg_cursor_theme()
+    xdg_cursor_name = _first_config_value(*xdg_theme) if xdg_theme is not None else None
+    cursor_name = _first_config_value(
+        get_kde_cursor_theme(),
+        get_lxqt_cursor_theme(),
+        get_x_resources_cursor_theme(),
+        get_gtk_xsettings_cursor_theme(),
+        get_gtk4_cursor_theme(),
+        get_gtk3_cursor_theme(),
+        get_gtk2_cursor_theme(),
+        get_gnome_cursor_theme(),
+        get_cinnamon_cursor_theme(),
+        get_mate_cursor_theme(),
+        get_xfce_cursor_theme(),
+        xdg_cursor_name,
+    )
+    return cursor_name if isinstance(cursor_name, str) and cursor_name.strip() else None
+
+
+def _get_live_cursor_size() -> int | None:
+    cursor_size = _first_config_value(
+        get_kde_cursor_size(),
+        get_lxqt_cursor_size(),
+        get_x_resources_cursor_size(),
+        get_gtk_xsettings_cursor_size(),
+        get_gtk4_cursor_size(),
+        get_gtk3_cursor_size(),
+        get_gtk2_cursor_size(),
+        get_gnome_cursor_size(),
+        get_cinnamon_cursor_size(),
+        get_mate_cursor_size(),
+        get_xfce_cursor_size(),
+    )
+    return cursor_size if isinstance(cursor_size, int) else None
+
+
+def _refresh_linux_cursor_session(cursor_name: str | None, cursor_size: int | None) -> None:
+    refresh_lxqt_cursor_session(cursor_name, cursor_size)
+    if cursor_name is not None:
+        refresh_kde_cursor_session(cursor_name, cursor_size)
+
+
 def set_linux_cursor_theme(
     cursor_name: str,
 ) -> None:
@@ -249,6 +301,7 @@ def set_linux_cursor_theme(
     set_xdg_cursor_theme(cursor_name)
     set_xfce_cursor_theme(cursor_name)
     set_gtk_xsettings_cursor_theme(cursor_name)
+    _refresh_linux_cursor_session(cursor_name, _get_live_cursor_size())
     logger.info("Linux 鼠标指针主题已设置为 '%s'", cursor_name)
 
 
@@ -282,6 +335,7 @@ def set_linux_cursor_size(
     set_x_resources_cursor_size(cursor_size)
     set_xfce_cursor_size(cursor_size)
     set_gtk_xsettings_cursor_size(cursor_size)
+    _refresh_linux_cursor_session(_get_live_cursor_theme(), cursor_size)
     logger.info("鼠标指针大小已设置为 %s", cursor_size)
 
 

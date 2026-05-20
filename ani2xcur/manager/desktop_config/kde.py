@@ -75,31 +75,6 @@ def _notify_kde_cursor_change() -> None:
     )
 
 
-def _reconfigure_kwin() -> None:
-    for executable in ("qdbus6", "qdbus-qt6", "qdbus", "qdbus-qt5"):
-        if shutil.which(executable):
-            command = [executable, "org.kde.KWin", "/KWin", "reconfigure"]
-            logger.debug("执行 KWin 重新加载配置命令: %s", command)
-            run_cmd(command, live=False, check=False)
-            return
-
-    dbus_send = shutil.which("dbus-send")
-    if not dbus_send:
-        logger.debug("未找到 qdbus/dbus-send, 跳过 KWin 重新加载配置")
-        return
-
-    command = [
-        "dbus-send",
-        "--session",
-        "--dest=org.kde.KWin",
-        "--type=method_call",
-        "/KWin",
-        "org.kde.KWin.reconfigure",
-    ]
-    logger.debug("执行 KWin D-Bus 重新加载配置命令: %s", command)
-    run_cmd(command, live=False, check=False)
-
-
 def _refresh_root_cursor(cursor_name: str | None, cursor_size: int | None) -> None:
     if not shutil.which("xsetroot"):
         logger.debug("未找到 xsetroot, 跳过 X11 root 光标刷新")
@@ -118,10 +93,10 @@ def _refresh_root_cursor(cursor_name: str | None, cursor_size: int | None) -> No
     run_cmd(command, custom_env=custom_env, live=False, check=False)
 
 
-def _refresh_current_session(cursor_name: str, cursor_size: int | None = None) -> None:
+def refresh_kde_cursor_session(cursor_name: str, cursor_size: int | None = None) -> None:
+    """Refresh KDE session cursor state after cursor config files are written."""
     _apply_plasma_cursor_theme(cursor_name)
     _notify_kde_cursor_change()
-    _reconfigure_kwin()
     if is_wayland_session():
         logger.debug("当前为 Wayland 会话, 跳过 KDE X11-only 光标刷新")
         return
@@ -226,9 +201,6 @@ def set_kde_cursor_theme(
     else:
         logger.debug("未找到 KDE writeconfig 可执行文件, 跳过 kcminputrc 光标主题写入")
 
-    cursor_size = get_kde_cursor_size()
-    _refresh_current_session(cursor_name, cursor_size)
-
 
 def set_kde_cursor_size(
     cursor_size: int,
@@ -250,9 +222,3 @@ def set_kde_cursor_size(
         live=False,
         check=False,
     )
-
-    cursor_name = get_kde_cursor_theme()
-    if cursor_name is not None:
-        _refresh_current_session(cursor_name, cursor_size)
-    else:
-        logger.debug("未读取到 KDE 当前光标主题, 跳过当前会话刷新")

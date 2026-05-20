@@ -78,7 +78,8 @@ def _update_session_environment(cursor_name: str | None, cursor_size: int | None
     )
 
 
-def _apply_lxqt_cursor_config(cursor_name: str | None, cursor_size: int | None) -> None:
+def refresh_lxqt_cursor_session(cursor_name: str | None, cursor_size: int | None) -> None:
+    """Refresh LXQt/Xcursor session state after cursor config files are written."""
     _merge_x_resources()
     _update_session_environment(cursor_name, cursor_size)
     apply_x_cursor_theme(cursor_name, cursor_size)
@@ -129,7 +130,6 @@ def set_lxqt_cursor_theme(
     _write_lxqt_config(config)
 
     x_org.set_x_resources_cursor_theme(cursor_name)
-    _apply_lxqt_cursor_config(cursor_name, get_lxqt_cursor_size())
 
 
 def set_lxqt_cursor_size(
@@ -146,4 +146,3 @@ def set_lxqt_cursor_size(
     _write_lxqt_config(config)
 
     x_org.set_x_resources_cursor_size(cursor_size)
-    _apply_lxqt_cursor_config(get_lxqt_cursor_theme(), cursor_size)

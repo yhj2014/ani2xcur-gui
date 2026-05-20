@@ -20,7 +20,7 @@ def test_get_kde_cursor_theme_prefers_plasma_6(monkeypatch):
     assert calls[0][0] == "kreadconfig6"
 
 
-def test_set_kde_cursor_theme_writes_config_then_refreshes_session(monkeypatch):
+def test_set_kde_cursor_theme_writes_config_without_refresh(monkeypatch):
     calls = []
     x_calls = []
     monkeypatch.setenv("XDG_SESSION_TYPE", "x11")
@@ -44,12 +44,11 @@ def test_set_kde_cursor_theme_writes_config_then_refreshes_session(monkeypatch):
 
     assert calls == [
         ["kwriteconfig6", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme", "MyCursor"],
-        ["plasma-apply-cursortheme", "MyCursor"],
     ]
-    assert x_calls == [("MyCursor", None)]
+    assert x_calls == []
 
 
-def test_set_kde_cursor_theme_applies_when_writeconfig_is_missing(monkeypatch):
+def test_set_kde_cursor_theme_does_not_refresh_when_writeconfig_is_missing(monkeypatch):
     calls = []
     x_calls = []
     monkeypatch.setenv("XDG_SESSION_TYPE", "x11")
@@ -71,11 +70,11 @@ def test_set_kde_cursor_theme_applies_when_writeconfig_is_missing(monkeypatch):
 
     kde.set_kde_cursor_theme("MyCursor")
 
-    assert calls == [["plasma-apply-cursortheme", "MyCursor"]]
-    assert x_calls == [("MyCursor", None)]
+    assert calls == []
+    assert x_calls == []
 
 
-def test_set_kde_cursor_theme_refreshes_kde_x11_helpers(monkeypatch):
+def test_refresh_kde_cursor_session_uses_kde_x11_helpers(monkeypatch):
     calls = []
     x_calls = []
     root_envs = []
@@ -84,7 +83,7 @@ def test_set_kde_cursor_theme_refreshes_kde_x11_helpers(monkeypatch):
     monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
 
     def fake_which(name):
-        if name in {"kwriteconfig6", "kreadconfig6", "plasma-apply-cursortheme", "dbus-send", "qdbus6", "xsetroot"}:
+        if name in {"kwriteconfig6", "kreadconfig6", "plasma-apply-cursortheme", "dbus-send", "xsetroot"}:
             return f"/usr/bin/{name}"
         return None
 
@@ -100,11 +99,9 @@ def test_set_kde_cursor_theme_refreshes_kde_x11_helpers(monkeypatch):
     monkeypatch.setattr(kde, "run_cmd", fake_run_cmd)
     monkeypatch.setattr(kde, "apply_x_cursor_theme", lambda name, size=None: x_calls.append((name, size)))
 
-    kde.set_kde_cursor_theme("MyCursor")
+    kde.refresh_kde_cursor_session("MyCursor", 32)
 
     assert calls == [
-        ["kwriteconfig6", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme", "MyCursor"],
-        ["kreadconfig6", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorSize"],
         ["plasma-apply-cursortheme", "MyCursor"],
         [
             "dbus-send",
@@ -115,13 +112,11 @@ def test_set_kde_cursor_theme_refreshes_kde_x11_helpers(monkeypatch):
             "int32:5",
             "int32:0",
         ],
-        ["qdbus6", "org.kde.KWin", "/KWin", "reconfigure"],
         ["xsetroot", "-cursor_name", "left_ptr"],
     ]
     assert x_calls == [("MyCursor", 32)]
     assert root_envs[0]["XCURSOR_THEME"] == "MyCursor"
     assert root_envs[0]["XCURSOR_SIZE"] == "32"
-
 
 def test_set_kde_cursor_size_refreshes_current_theme(monkeypatch):
     calls = []
@@ -149,13 +144,11 @@ def test_set_kde_cursor_size_refreshes_current_theme(monkeypatch):
 
     assert calls == [
         ["kwriteconfig6", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorSize", "32"],
-        ["kreadconfig6", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme"],
-        ["plasma-apply-cursortheme", "Breeze"],
     ]
-    assert x_calls == [("Breeze", 32)]
+    assert x_calls == []
 
 
-def test_set_kde_cursor_theme_on_wayland_uses_plasma_apply_without_x11_refresh(monkeypatch):
+def test_refresh_kde_cursor_session_on_wayland_uses_plasma_apply_without_x11_refresh(monkeypatch):
     calls = []
     x_calls = []
     monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
@@ -177,11 +170,9 @@ def test_set_kde_cursor_theme_on_wayland_uses_plasma_apply_without_x11_refresh(m
     monkeypatch.setattr(kde, "run_cmd", fake_run_cmd)
     monkeypatch.setattr(kde, "apply_x_cursor_theme", lambda name, size=None: x_calls.append((name, size)))
 
-    kde.set_kde_cursor_theme("Blue")
+    kde.refresh_kde_cursor_session("Blue", 24)
 
     assert calls == [
-        ["kwriteconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme", "Blue"],
-        ["kreadconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorSize"],
         ["plasma-apply-cursortheme", "Blue"],
         [
             "dbus-send",
@@ -192,19 +183,11 @@ def test_set_kde_cursor_theme_on_wayland_uses_plasma_apply_without_x11_refresh(m
             "int32:5",
             "int32:0",
         ],
-        [
-            "dbus-send",
-            "--session",
-            "--dest=org.kde.KWin",
-            "--type=method_call",
-            "/KWin",
-            "org.kde.KWin.reconfigure",
-        ],
     ]
     assert x_calls == []
 
 
-def test_set_kde_cursor_size_on_wayland_uses_plasma_apply_without_x11_refresh(monkeypatch):
+def test_set_kde_cursor_theme_on_wayland_writes_config_without_refresh(monkeypatch):
     calls = []
     x_calls = []
     monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
@@ -226,29 +209,10 @@ def test_set_kde_cursor_size_on_wayland_uses_plasma_apply_without_x11_refresh(mo
     monkeypatch.setattr(kde, "run_cmd", fake_run_cmd)
     monkeypatch.setattr(kde, "apply_x_cursor_theme", lambda name, size=None: x_calls.append((name, size)))
 
-    kde.set_kde_cursor_size(32)
+    kde.set_kde_cursor_theme("Blue")
 
     assert calls == [
-        ["kwriteconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorSize", "32"],
-        ["kreadconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme"],
-        ["plasma-apply-cursortheme", "Blue"],
-        [
-            "dbus-send",
-            "--session",
-            "--type=signal",
-            "/KGlobalSettings",
-            "org.kde.KGlobalSettings.notifyChange",
-            "int32:5",
-            "int32:0",
-        ],
-        [
-            "dbus-send",
-            "--session",
-            "--dest=org.kde.KWin",
-            "--type=method_call",
-            "/KWin",
-            "org.kde.KWin.reconfigure",
-        ],
+        ["kwriteconfig5", "--file", "kcminputrc", "--group", "Mouse", "--key", "cursorTheme", "Blue"],
     ]
     assert x_calls == []
 
