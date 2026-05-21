@@ -235,7 +235,11 @@ def _is_high_res_cursor_image(cursor: CursorImage) -> bool:
 
 
 def _is_grayscale_rgba(image: Image.Image) -> bool:
-    for red, green, blue, _ in image.getdata():
+    pixels = image.convert("RGBA").tobytes()
+    for index in range(0, len(pixels), 4):
+        red = pixels[index]
+        green = pixels[index + 1]
+        blue = pixels[index + 2]
         if red != green or red != blue:
             return False
     return True
