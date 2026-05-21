@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import struct
 from io import BytesIO
 
 from PIL import Image
 
 from ani2xcur.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
-from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame
+from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame, CursorImage
 from ani2xcur.cursor_conversion.native_cursor.parsers import (
     ANIH_HEADER,
     CHUNK_HEADER,
@@ -31,6 +32,7 @@ logger = get_logger(
 )
 
 ANI_ICON_FLAG = 0x1
+WINDOWS_HIGH_RES_SIZE = 96
 
 
 def to_xcursor(frames: list[CursorFrame]) -> bytes:
@@ -99,12 +101,17 @@ def to_cur(frame: CursorFrame) -> bytes:
     Raises:
         ValueError: 图像尺寸或热点坐标不符合 .cur 格式要求时抛出。
     """
-    header = ICON_DIR.pack(0, 2, len(frame.images))
+    return _to_cur(frame, animated_frame=False)
+
+
+def _to_cur(frame: CursorFrame, *, animated_frame: bool) -> bytes:
+    images = _select_windows_cursor_images(frame.images, animated_frame=animated_frame)
+    header = ICON_DIR.pack(0, 2, len(images))
     directory: list[bytes] = []
     image_data: list[bytes] = []
-    offset = ICON_DIR.size + len(frame.images) * ICON_DIR_ENTRY.size
+    offset = ICON_DIR.size + len(images) * ICON_DIR_ENTRY.size
 
-    for cursor in frame.images:
+    for cursor in images:
         image = cursor.image.convert("RGBA")
         width, height = image.size
         if width > 256 or height > 256:
@@ -113,8 +120,8 @@ def to_cur(frame: CursorFrame) -> bytes:
         if not 0 <= hotspot_x <= width or not 0 <= hotspot_y <= height:
             raise ValueError(f"Cursor hotspot is outside the image: {cursor.hotspot}")
 
-        png_blob = _image_to_png(image)
-        image_data.append(png_blob)
+        payload = _image_to_dib(image) if _is_high_res_cursor_image(cursor) else _image_to_png(image)
+        image_data.append(payload)
         directory.append(
             ICON_DIR_ENTRY.pack(
                 0 if width == 256 else width,
@@ -123,13 +130,13 @@ def to_cur(frame: CursorFrame) -> bytes:
                 0,
                 hotspot_x,
                 hotspot_y,
-                len(png_blob),
+                len(payload),
                 offset,
             )
         )
-        offset += len(png_blob)
+        offset += len(payload)
 
-    logger.debug("序列化 CUR 文件: image_count=%s", len(frame.images))
+    logger.debug("序列化 CUR 文件: image_count=%s", len(images))
     return b"".join([header, *directory, *image_data])
 
 
@@ -150,7 +157,7 @@ def to_ani(frames: list[CursorFrame]) -> bytes:
         0,
         32,
         1,
-        rates[0] if rates else 1,
+        1,
         ANI_ICON_FLAG,
     )
 
@@ -185,15 +192,19 @@ def to_smart(frames: list[CursorFrame]) -> tuple[str, bytes]:
 
 
 def _image_to_png(image: Image.Image) -> bytes:
+    rgba_image = image.convert("RGBA")
+    if _is_grayscale_rgba(rgba_image):
+        rgba_image = rgba_image.convert("LA")
+
     buffer = BytesIO()
-    image.save(buffer, format="PNG")
+    rgba_image.save(buffer, format="PNG")
     return buffer.getvalue()
 
 
 def _ani_cursor_list(frames: list[CursorFrame]) -> bytes:
     chunks: list[bytes] = []
     for frame in frames:
-        cur_file = to_cur(frame)
+        cur_file = _to_cur(frame, animated_frame=True)
         chunk = CHUNK_HEADER.pack(b"icon", len(cur_file)) + cur_file
         if len(cur_file) & 1:
             chunk += b"\0"
@@ -206,6 +217,58 @@ def _frame_delay_to_jiffies(delay: float, animated: bool) -> int:
     if animated and jiffies <= 0:
         return 1
     return jiffies
+
+
+def _select_windows_cursor_images(images: list[CursorImage], *, animated_frame: bool) -> list[CursorImage]:
+    sorted_images = sorted(images, key=lambda cursor: (cursor.nominal, cursor.image.width, cursor.image.height))
+    high_res_images = [cursor for cursor in sorted_images if _is_high_res_cursor_image(cursor)]
+    if not high_res_images:
+        return sorted_images
+    if animated_frame:
+        return [max(high_res_images, key=lambda cursor: (cursor.nominal, cursor.image.width, cursor.image.height))]
+    return [cursor for cursor in sorted_images if cursor.nominal >= WINDOWS_HIGH_RES_SIZE or _is_high_res_cursor_image(cursor)]
+
+
+def _is_high_res_cursor_image(cursor: CursorImage) -> bool:
+    width, height = cursor.image.size
+    return max(width, height, cursor.nominal) > WINDOWS_HIGH_RES_SIZE
+
+
+def _is_grayscale_rgba(image: Image.Image) -> bool:
+    for red, green, blue, _ in image.getdata():
+        if red != green or red != blue:
+            return False
+    return True
+
+
+def _image_to_dib(image: Image.Image) -> bytes:
+    rgba_image = image.convert("RGBA")
+    width, height = rgba_image.size
+    pixels = rgba_image.tobytes()
+    row_stride = width * 4
+    mask_stride = ((width + 31) // 32) * 4
+
+    xor_rows: list[bytes] = []
+    mask_rows: list[bytes] = []
+    for y in range(height - 1, -1, -1):
+        xor_row = bytearray(row_stride)
+        mask_row = bytearray(mask_stride)
+        for x in range(width):
+            src = (y * width + x) * 4
+            dst = x * 4
+            red, green, blue, alpha = pixels[src : src + 4]
+            if alpha == 0:
+                red = green = blue = 0
+            xor_row[dst : dst + 4] = bytes((blue, green, red, alpha))
+            if alpha == 0:
+                mask_row[x // 8] |= 0x80 >> (x % 8)
+        xor_rows.append(bytes(xor_row))
+        mask_rows.append(bytes(mask_row))
+
+    xor_bitmap = b"".join(xor_rows)
+    mask_bitmap = b"".join(mask_rows)
+    header = struct.pack("<IiiHHIIiiII", 40, width, height * 2, 1, 32, 0, len(xor_bitmap) + len(mask_bitmap), 0, 0, 0, 0)
+    return header + xor_bitmap + mask_bitmap
 
 
 def _premultiply_rgba_to_bgra(source: bytes) -> bytes:

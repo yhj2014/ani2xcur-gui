@@ -75,7 +75,8 @@ def normalize_xcursor_sizes(
 
         existing_by_nominal = {cursor.nominal: cursor for cursor in frame.images}
         normalized_images: list[CursorImage] = []
-        for target_size in sizes:
+        normalized_sizes = sorted(set(sizes) | set(existing_by_nominal))
+        for target_size in normalized_sizes:
             if target_size in existing_by_nominal:
                 normalized_images.append(existing_by_nominal[target_size])
                 reused_count += 1

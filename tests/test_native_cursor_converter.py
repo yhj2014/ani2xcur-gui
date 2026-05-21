@@ -73,6 +73,50 @@ def test_windows_writers_round_trip_static_and_animated_cursors():
     assert [frame.images[0].hotspot for frame in parsed_ani] == [(3, 4), (5, 6)]
 
 
+def test_windows_writers_use_win2xcur_compatible_png_payloads():
+    image = Image.new("RGBA", (2, 2), (255, 255, 255, 255))
+    image.putpixel((1, 0), (0, 0, 0, 0))
+    frame = CursorFrame([CursorImage(image, (1, 1), 2)], delay=0.1)
+
+    cur_blob = to_cur(frame)
+    ani_blob = to_ani([frame, frame.clone()])
+
+    cur_payload = _first_cur_payload(cur_blob)
+    ani_payload = _first_cur_payload(_first_ani_icon_cur(ani_blob))
+    for payload in [cur_payload, ani_payload]:
+        assert payload.startswith(b"\x89PNG\r\n\x1a\n")
+        assert _png_ihdr(payload) == (2, 2, 8, 4, 0, 0, 0)
+
+    assert _ani_display_rate(ani_blob) == 1
+    parsed = parse_blob(cur_blob)
+    assert parsed[0].images[0].image.getpixel((1, 0)) == (0, 0, 0, 0)
+
+
+def test_windows_writers_use_dib_payloads_for_high_resolution_images():
+    small = CursorImage(Image.new("RGBA", (32, 32), (255, 0, 0, 255)), (4, 4), 32)
+    large = CursorImage(Image.new("RGBA", (128, 128), (0, 0, 255, 255)), (16, 16), 128)
+
+    cur_blob = to_cur(CursorFrame([small, large]))
+    payloads = _cur_payloads(cur_blob)
+
+    assert len(payloads) == 1
+    assert not payloads[0].startswith(b"\x89PNG\r\n\x1a\n")
+    assert struct.unpack_from("<IiiHHI", payloads[0], 0) == (40, 128, 256, 1, 32, 0)
+
+
+def test_windows_ani_writer_keeps_only_largest_high_resolution_frame_image():
+    small = CursorImage(Image.new("RGBA", (32, 32), (255, 0, 0, 255)), (4, 4), 32)
+    medium = CursorImage(Image.new("RGBA", (96, 96), (0, 255, 0, 255)), (12, 12), 96)
+    large = CursorImage(Image.new("RGBA", (256, 256), (0, 0, 255, 255)), (32, 32), 256)
+
+    ani_blob = to_ani([CursorFrame([small, medium, large], delay=0.1)])
+    payloads = _cur_payloads(_first_ani_icon_cur(ani_blob))
+
+    assert len(payloads) == 1
+    assert not payloads[0].startswith(b"\x89PNG\r\n\x1a\n")
+    assert struct.unpack_from("<IiiHHI", payloads[0], 0) == (40, 256, 512, 1, 32, 0)
+
+
 def test_parse_32bit_dib_cur_uses_alpha_channel():
     cur_blob = _make_cur_blob(_make_32bit_dib_payload())
 
@@ -213,6 +257,18 @@ def test_normalize_xcursor_sizes_keeps_animation_delay():
     assert [[image.nominal for image in frame.images] for frame in frames] == [[16, 32], [16, 32]]
 
 
+def test_normalize_xcursor_sizes_preserves_source_sizes_outside_target_list():
+    frames = [CursorFrame([CursorImage(Image.new("RGBA", (128, 128), (0, 0, 0, 255)), (16, 16), 128)])]
+
+    normalize_xcursor_sizes(frames, [24, 96])
+
+    assert [(image.image.size, image.hotspot, image.nominal) for image in frames[0].images] == [
+        ((24, 24), (3, 3), 24),
+        ((96, 96), (12, 12), 96),
+        ((128, 128), (16, 16), 128),
+    ]
+
+
 def test_scale_then_normalize_preserves_scaled_visual_size():
     frames = [CursorFrame([CursorImage(Image.new("RGBA", (10, 10), (0, 0, 0, 255)), (2, 3), 10)])]
 
@@ -232,7 +288,7 @@ def test_win2xcur_process_synthesizes_default_sizes_from_single_size_cur(tmp_pat
     output_file = win2xcur_process(input_file, tmp_path)
 
     frames = parse_blob(output_file.read_bytes())
-    assert [image.nominal for image in frames[0].images] == list(DEFAULT_XCURSOR_SIZES)
+    assert [image.nominal for image in frames[0].images] == [16, *DEFAULT_XCURSOR_SIZES]
 
 
 def test_shadow_uses_requested_opacity():
@@ -256,6 +312,73 @@ def _make_cur_blob(payload: bytes) -> bytes:
     header = struct.pack("<HHH", 0, 2, 1)
     entry = struct.pack("<BBBBHHII", 2, 2, 0, 0, 1, 1, len(payload), len(header) + 16)
     return header + entry + payload
+
+
+def _first_cur_payload(cur_blob: bytes) -> bytes:
+    _, cursor_type, image_count = struct.unpack_from("<HHH", cur_blob, 0)
+    assert cursor_type == 2
+    assert image_count > 0
+    _, _, _, _, _, _, image_size, image_offset = struct.unpack_from("<BBBBHHII", cur_blob, 6)
+    return cur_blob[image_offset : image_offset + image_size]
+
+
+def _cur_payloads(cur_blob: bytes) -> list[bytes]:
+    _, cursor_type, image_count = struct.unpack_from("<HHH", cur_blob, 0)
+    assert cursor_type == 2
+    payloads: list[bytes] = []
+    offset = 6
+    for _ in range(image_count):
+        _, _, _, _, _, _, image_size, image_offset = struct.unpack_from("<BBBBHHII", cur_blob, offset)
+        payloads.append(cur_blob[image_offset : image_offset + image_size])
+        offset += 16
+    return payloads
+
+
+def _first_ani_icon_cur(ani_blob: bytes) -> bytes:
+    signature, riff_size, subtype = struct.unpack_from("<4sI4s", ani_blob, 0)
+    assert signature == b"RIFF"
+    assert subtype == b"ACON"
+    offset = 12
+    end = min(len(ani_blob), 8 + riff_size)
+    while offset + 8 <= end:
+        name, size = struct.unpack_from("<4sI", ani_blob, offset)
+        payload_start = offset + 8
+        payload_end = payload_start + size
+        if name == b"LIST" and ani_blob[payload_start : payload_start + 4] == b"fram":
+            child_offset = payload_start + 4
+            while child_offset + 8 <= payload_end:
+                child_name, child_size = struct.unpack_from("<4sI", ani_blob, child_offset)
+                child_start = child_offset + 8
+                child_end = child_start + child_size
+                if child_name == b"icon":
+                    return ani_blob[child_start:child_end]
+                child_offset = child_end + (child_end & 1)
+        offset = payload_end + (payload_end & 1)
+    raise AssertionError("ANI file does not contain icon frames")
+
+
+def _ani_display_rate(ani_blob: bytes) -> int:
+    signature, riff_size, subtype = struct.unpack_from("<4sI4s", ani_blob, 0)
+    assert signature == b"RIFF"
+    assert subtype == b"ACON"
+    offset = 12
+    end = min(len(ani_blob), 8 + riff_size)
+    while offset + 8 <= end:
+        name, size = struct.unpack_from("<4sI", ani_blob, offset)
+        payload_start = offset + 8
+        payload_end = payload_start + size
+        if name == b"anih":
+            return struct.unpack_from("<IIIIIIIII", ani_blob, payload_start)[7]
+        offset = payload_end + (payload_end & 1)
+    raise AssertionError("ANI file does not contain anih chunk")
+
+
+def _png_ihdr(png_blob: bytes) -> tuple[int, int, int, int, int, int, int]:
+    assert png_blob.startswith(b"\x89PNG\r\n\x1a\n")
+    length, chunk_type = struct.unpack_from(">I4s", png_blob, 8)
+    assert length == 13
+    assert chunk_type == b"IHDR"
+    return struct.unpack_from(">IIBBBBB", png_blob, 16)
 
 
 def _make_32bit_dib_payload() -> bytes:

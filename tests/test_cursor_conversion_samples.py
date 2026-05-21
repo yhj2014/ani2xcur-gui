@@ -11,6 +11,7 @@ from ani2xcur.manager.win_cur_manager import extract_scheme_info_from_inf
 
 
 MOUSE_POINTER_INF_FILE = Path(__file__).resolve().parent / "Sunaokami-Shiroko-Windows" / "Right-click to install.inf"
+HIIRO_INF_FILE = Path(__file__).resolve().parent / "Hiiro-Windows" / "AutoSetup.inf"
 
 
 def test_win_cursor_to_x11_uses_real_windows_sample(monkeypatch, windows_inf_file: Path, tmp_path: Path):
@@ -93,7 +94,7 @@ def test_real_win_cursor_to_x11_conversion_smoke(windows_inf_file: Path, tmp_pat
         if cursor_file.is_symlink() or not cursor_file.is_file():
             continue
         frames = parse_blob(cursor_file.read_bytes())
-        assert sorted({image.nominal for frame in frames for image in frame.images}) == list(DEFAULT_XCURSOR_SIZES)
+        assert set(DEFAULT_XCURSOR_SIZES).issubset({image.nominal for frame in frames for image in frame.images})
 
 
 @pytest.mark.integration
@@ -107,6 +108,21 @@ def test_real_mouse_pointer_win_cursor_to_x11_conversion_smoke(tmp_path: Path):
     assert len(frames) == 16
     assert frames[0].images[0].hotspot == (1, 1)
     assert sorted({image.nominal for frame in frames for image in frame.images}) == list(DEFAULT_XCURSOR_SIZES)
+
+
+@pytest.mark.integration
+def test_real_hiiro_windows_round_trip_preserves_large_cursor_sizes(tmp_path: Path):
+    linux_dir = cursor_convert.win_cursor_to_x11(HIIRO_INF_FILE, tmp_path / "linux", {})
+    linux_left_ptr = parse_blob((linux_dir / "cursors" / "left_ptr").read_bytes())
+
+    assert (256, 256) in {image.image.size for frame in linux_left_ptr for image in frame.images}
+
+    win_dir = cursor_convert.x11_cursor_to_win(linux_dir / "cursor.theme", tmp_path / "win", {})
+    arrow_frames = parse_blob((win_dir / "Arrow.ani").read_bytes())
+    crosshair_frames = parse_blob((win_dir / "Crosshair.cur").read_bytes())
+
+    assert sorted({image.image.size for frame in arrow_frames for image in frame.images}) == [(256, 256)]
+    assert sorted({image.image.size for frame in crosshair_frames for image in frame.images}) == [(96, 96), (128, 128)]
 
 
 @pytest.mark.integration
