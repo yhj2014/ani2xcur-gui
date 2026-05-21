@@ -181,7 +181,7 @@ Comment={cursor_name} cursor for Linux
 Inherits={inherited_theme}
 """.strip()
 
-    logger.debug("鼠标指针配置文件内容:\n\n- cursor.theme:\n````\n%s\n```\n\n- index.theme:\n```\n%s\n```", cursor_config, index_config)
+    logger.debug("鼠标指针配置文件内容:\n\n- cursor.theme:\n```\n%s\n```\n\n- index.theme:\n```\n%s\n```", cursor_config, index_config)
     with open((cursor_path / "cursor.theme"), "w", encoding="utf-8") as file:
         file.write(cursor_config)
     with open((cursor_path / "index.theme"), "w", encoding="utf-8") as file:

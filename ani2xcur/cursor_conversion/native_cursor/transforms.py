@@ -16,7 +16,7 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
-DEFAULT_XCURSOR_SIZES = (24, 28, 32, 40, 48, 56, 64, 72, 80)
+DEFAULT_XCURSOR_SIZES = (24, 28, 32, 40, 48, 56, 64, 72, 80, 88, 96)
 """转换到 Linux Xcursor 主题时默认生成的名义尺寸列表。"""
 
 

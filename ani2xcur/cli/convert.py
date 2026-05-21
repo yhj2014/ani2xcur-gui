@@ -130,7 +130,7 @@ def win2xcur(
             help="打包成压缩包时使用的压缩包格式",
             click_type=click.Choice(SUPPORTED_ARCHIVE_FORMAT),
         ),
-    ] = ".zip",
+    ] = ".7z",
     install: Annotated[
         bool,
         typer.Option(
@@ -265,7 +265,7 @@ def x2wincur(
             help="打包成压缩包时使用的压缩包格式",
             click_type=click.Choice(SUPPORTED_ARCHIVE_FORMAT),
         ),
-    ] = ".zip",
+    ] = ".7z",
     install: Annotated[
         bool,
         typer.Option(
