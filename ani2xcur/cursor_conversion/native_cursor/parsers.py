@@ -301,7 +301,9 @@ def _decode_dib_payload(payload: bytes, entry_width: int, entry_height: int) -> 
     if header_size < 40 or len(payload) < header_size:
         raise ValueError(f"Unsupported DIB header size {header_size}")
 
-    width, raw_height, planes, bit_count, compression, _, _, _, colors_used, _ = struct.unpack_from("<iiHHIIiiII", payload, 4)
+    width, raw_height, planes, bit_count, compression, image_size, _, _, colors_used, _ = struct.unpack_from(
+        "<iiHHIIiiII", payload, 4
+    )
     if planes != 1:
         raise ValueError(f"Unsupported DIB plane count {planes}")
     if compression != 0:
@@ -311,8 +313,7 @@ def _decode_dib_payload(payload: bytes, entry_width: int, entry_height: int) -> 
 
     width = abs(width) or entry_width
     absolute_height = abs(raw_height)
-    height = entry_height if absolute_height >= entry_height * 2 else absolute_height
-    if width <= 0 or height <= 0:
+    if width <= 0 or absolute_height <= 0:
         raise ValueError("Invalid DIB cursor dimensions")
 
     palette: list[tuple[int, int, int]] = []
@@ -328,9 +329,19 @@ def _decode_dib_payload(payload: bytes, entry_width: int, entry_height: int) -> 
             palette.append((r, g, b))
     pixel_offset = header_size + color_table_size
     row_stride = ((width * bit_count + 31) // 32) * 4
+    mask_stride = ((width + 31) // 32) * 4
+    available_data_size = len(payload) - pixel_offset
+    declared_data_size = image_size or available_data_size
+    height = _infer_dib_cursor_height(
+        absolute_height=absolute_height,
+        entry_height=entry_height,
+        row_stride=row_stride,
+        mask_stride=mask_stride,
+        available_data_size=available_data_size,
+        declared_data_size=declared_data_size,
+    )
     xor_size = row_stride * height
     mask_offset = pixel_offset + xor_size
-    mask_stride = ((width + 31) // 32) * 4
     if len(payload) < pixel_offset + xor_size:
         raise ValueError("DIB cursor pixel data is truncated")
 
@@ -374,6 +385,52 @@ def _decode_dib_payload(payload: bytes, entry_width: int, entry_height: int) -> 
             rgba[dst : dst + 4] = bytes((r, g, b, alpha))
 
     return Image.frombytes("RGBA", (width, height), bytes(rgba))
+
+
+def _infer_dib_cursor_height(
+    *,
+    absolute_height: int,
+    entry_height: int,
+    row_stride: int,
+    mask_stride: int,
+    available_data_size: int,
+    declared_data_size: int,
+) -> int:
+    """Infer the real bitmap height for cursor DIB payloads.
+
+    CUR directory dimensions are limited to a byte and can disagree with the
+    embedded DIB header. Cursor DIBs normally store XOR and AND bitmaps, so the
+    header height is twice the visible image height.
+    """
+
+    def exact_with_mask(height: int) -> bool:
+        return row_stride * height + mask_stride * height == declared_data_size
+
+    def exact_without_mask(height: int) -> bool:
+        return row_stride * height == declared_data_size
+
+    def fits_with_mask(height: int) -> bool:
+        return row_stride * height + mask_stride * height <= available_data_size
+
+    def fits_without_mask(height: int) -> bool:
+        return row_stride * height <= available_data_size
+
+    candidate_heights: list[int] = []
+    if absolute_height % 2 == 0:
+        candidate_heights.append(absolute_height // 2)
+    candidate_heights.append(absolute_height)
+    if entry_height > 0:
+        candidate_heights.append(entry_height)
+
+    for height in candidate_heights:
+        if height > 0 and (exact_with_mask(height) or exact_without_mask(height)):
+            return height
+
+    for height in candidate_heights:
+        if height > 0 and (fits_with_mask(height) or fits_without_mask(height)):
+            return height
+
+    raise ValueError("DIB cursor pixel data is truncated")
 
 
 def _decode_indexed_dib_pixel(payload: bytes, row_start: int, x: int, bit_count: int) -> int:

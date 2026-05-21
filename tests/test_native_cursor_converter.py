@@ -128,6 +128,16 @@ def test_parse_32bit_dib_cur_uses_alpha_channel():
     assert image.getpixel((1, 1)) == (255, 255, 255, 0)
 
 
+def test_parse_dib_cur_prefers_bitmap_height_when_directory_height_is_wrong():
+    cur_blob = _make_cur_blob(_make_32bit_dib_payload_for_size(4, 4), width=2, height=2, hotspot=(3, 3))
+
+    frames = parse_blob(cur_blob)
+
+    image = frames[0].images[0].image
+    assert [(cursor.image.size, cursor.hotspot, cursor.nominal) for cursor in frames[0].images] == [((4, 4), (3, 3), 4)]
+    assert image.getpixel((3, 3)) == (3, 3, 100, 255)
+
+
 def test_parse_24bit_dib_cur_uses_and_mask():
     cur_blob = _make_cur_blob(_make_24bit_dib_payload())
 
@@ -308,9 +318,9 @@ def test_shadow_uses_requested_opacity():
     assert alpha_histogram[64] > 0
 
 
-def _make_cur_blob(payload: bytes) -> bytes:
+def _make_cur_blob(payload: bytes, *, width: int = 2, height: int = 2, hotspot: tuple[int, int] = (1, 1)) -> bytes:
     header = struct.pack("<HHH", 0, 2, 1)
-    entry = struct.pack("<BBBBHHII", 2, 2, 0, 0, 1, 1, len(payload), len(header) + 16)
+    entry = struct.pack("<BBBBHHII", width, height, 0, 0, hotspot[0], hotspot[1], len(payload), len(header) + 16)
     return header + entry + payload
 
 
@@ -409,6 +419,18 @@ def _make_32bit_dib_payload() -> bytes:
     mask = b"\x00" * (mask_stride * height)
     header = struct.pack("<IiiHHIIiiII", 40, width, height * 2, 1, 32, 0, row_stride * height + len(mask), 0, 0, 0, 0)
     return header + pixels_bottom_up + mask
+
+
+def _make_32bit_dib_payload_for_size(width: int, height: int) -> bytes:
+    row_stride = width * 4
+    mask_stride = ((width + 31) // 32) * 4
+    pixels_bottom_up = bytearray()
+    for y in range(height - 1, -1, -1):
+        for x in range(width):
+            pixels_bottom_up.extend((100, y, x, 255))
+    mask = b"\x00" * (mask_stride * height)
+    header = struct.pack("<IiiHHIIiiII", 40, width, height * 2, 1, 32, 0, row_stride * height + len(mask), 0, 0, 0, 0)
+    return header + bytes(pixels_bottom_up) + mask
 
 
 def _make_24bit_dib_payload() -> bytes:
