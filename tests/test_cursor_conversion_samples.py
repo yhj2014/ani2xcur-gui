@@ -10,6 +10,9 @@ from ani2xcur.manager.base import CURSOR_KEYS
 from ani2xcur.manager.win_cur_manager import extract_scheme_info_from_inf
 
 
+MOUSE_POINTER_INF_FILE = Path(__file__).resolve().parent / "Sunaokami-Shiroko-Windows" / "Right-click to install.inf"
+
+
 def test_win_cursor_to_x11_uses_real_windows_sample(monkeypatch, windows_inf_file: Path, tmp_path: Path):
     calls = []
 
@@ -91,6 +94,19 @@ def test_real_win_cursor_to_x11_conversion_smoke(windows_inf_file: Path, tmp_pat
             continue
         frames = parse_blob(cursor_file.read_bytes())
         assert sorted({image.nominal for frame in frames for image in frame.images}) == list(DEFAULT_XCURSOR_SIZES)
+
+
+@pytest.mark.integration
+def test_real_mouse_pointer_win_cursor_to_x11_conversion_smoke(tmp_path: Path):
+    save_dir = cursor_convert.win_cursor_to_x11(MOUSE_POINTER_INF_FILE, tmp_path, {})
+    left_ptr = save_dir / "cursors" / "left_ptr"
+
+    assert save_dir == tmp_path / "Sunaōkami Shiroko"
+    assert left_ptr.is_file()
+    frames = parse_blob(left_ptr.read_bytes())
+    assert len(frames) == 16
+    assert frames[0].images[0].hotspot == (1, 1)
+    assert sorted({image.nominal for frame in frames for image in frame.images}) == list(DEFAULT_XCURSOR_SIZES)
 
 
 @pytest.mark.integration

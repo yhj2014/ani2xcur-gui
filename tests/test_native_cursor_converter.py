@@ -1,5 +1,7 @@
 import struct
+from pathlib import Path
 
+import pytest
 from PIL import Image
 
 from ani2xcur.cursor_conversion.native_cursor.models import CursorFrame, CursorImage
@@ -12,6 +14,9 @@ from ani2xcur.cursor_conversion.native_cursor.transforms import (
     scale_frames,
 )
 from ani2xcur.cursor_conversion.native_cursor.writers import to_ani, to_cur, to_xcursor
+
+
+MOUSE_POINTER_DIR = Path(__file__).resolve().parent / "Sunaokami-Shiroko-Windows"
 
 
 def test_parse_cur_preserves_all_sizes_and_hotspots(windows_cursor_dir):
@@ -88,6 +93,75 @@ def test_parse_24bit_dib_cur_uses_and_mask():
     assert image.size == (2, 2)
     assert image.getpixel((0, 0)) == (255, 0, 0, 255)
     assert image.getpixel((1, 0)) == (0, 255, 0, 0)
+
+
+def test_parse_8bit_dib_cur_uses_palette_and_mask():
+    cur_blob = _make_cur_blob(
+        _make_indexed_dib_payload(
+            8,
+            bottom_indices=[2, 1],
+            top_indices=[0, 3],
+            palette=[
+                (10, 20, 30),
+                (40, 50, 60),
+                (70, 80, 90),
+                (100, 110, 120),
+            ],
+        )
+    )
+
+    frames = parse_blob(cur_blob)
+
+    image = frames[0].images[0].image
+    assert image.size == (2, 2)
+    assert image.getpixel((0, 0)) == (10, 20, 30, 255)
+    assert image.getpixel((1, 0)) == (100, 110, 120, 0)
+    assert image.getpixel((0, 1)) == (70, 80, 90, 255)
+    assert image.getpixel((1, 1)) == (40, 50, 60, 255)
+
+
+@pytest.mark.parametrize(
+    ("bit_count", "palette"),
+    [
+        (1, [(0, 0, 0), (255, 255, 255)]),
+        (4, [(index, index + 1, index + 2) for index in range(16)]),
+    ],
+)
+def test_parse_bit_packed_indexed_dib_cur_uses_palette(bit_count: int, palette: list[tuple[int, int, int]]):
+    cur_blob = _make_cur_blob(
+        _make_indexed_dib_payload(
+            bit_count,
+            bottom_indices=[1, 0],
+            top_indices=[0, 1],
+            palette=palette,
+            colors_used=0,
+        )
+    )
+
+    frames = parse_blob(cur_blob)
+
+    image = frames[0].images[0].image
+    assert image.getpixel((0, 0)) == (*palette[0], 255)
+    assert image.getpixel((1, 0)) == (*palette[1], 0)
+    assert image.getpixel((0, 1)) == (*palette[1], 255)
+    assert image.getpixel((1, 1)) == (*palette[0], 255)
+
+
+def test_parse_real_mouse_pointer_8bit_ani_preserves_animation_metadata():
+    frames = parse_blob((MOUSE_POINTER_DIR / "pointer.ani").read_bytes())
+
+    assert len(frames) == 16
+    assert frames[0].delay == 6 / 60
+    assert [(image.image.size, image.hotspot, image.nominal) for image in frames[0].images] == [((32, 32), (1, 1), 32)]
+
+
+def test_parse_real_mouse_pointer_sample_supports_all_cursor_files():
+    cursor_files = sorted(path for path in MOUSE_POINTER_DIR.iterdir() if path.suffix.lower() in {".ani", ".cur"})
+
+    assert len(cursor_files) == 15
+    for cursor_file in cursor_files:
+        frames = parse_blob(cursor_file.read_bytes())
+        assert frames, cursor_file.name
 
 
 def test_scale_frames_scales_images_and_hotspots():
@@ -225,3 +299,39 @@ def _make_24bit_dib_payload() -> bytes:
     top_mask = b"\x40\x00\x00\x00"
     header = struct.pack("<IiiHHIIiiII", 40, width, height * 2, 1, 24, 0, row_stride * height + mask_stride * height, 0, 0, 0, 0)
     return header + bottom_row + top_row + bottom_mask + top_mask
+
+
+def _make_indexed_dib_payload(
+    bit_count: int,
+    *,
+    bottom_indices: list[int],
+    top_indices: list[int],
+    palette: list[tuple[int, int, int]],
+    colors_used: int | None = None,
+) -> bytes:
+    width = 2
+    height = 2
+    row_stride = ((width * bit_count + 31) // 32) * 4
+    mask_stride = 4
+    bottom_row = _pack_indexed_dib_row(bottom_indices, bit_count).ljust(row_stride, b"\x00")
+    top_row = _pack_indexed_dib_row(top_indices, bit_count).ljust(row_stride, b"\x00")
+    bottom_mask = b"\x00\x00\x00\x00"
+    top_mask = b"\x40\x00\x00\x00"
+    palette_blob = b"".join(struct.pack("<BBBB", blue, green, red, 0) for red, green, blue in palette)
+    image_size = row_stride * height + mask_stride * height
+    header = struct.pack("<IiiHHIIiiII", 40, width, height * 2, 1, bit_count, 0, image_size, 0, 0, len(palette) if colors_used is None else colors_used, 0)
+    return header + palette_blob + bottom_row + top_row + bottom_mask + top_mask
+
+
+def _pack_indexed_dib_row(indices: list[int], bit_count: int) -> bytes:
+    if bit_count == 8:
+        return bytes(indices)
+    if bit_count == 4:
+        return bytes([(indices[0] << 4) | indices[1]])
+    if bit_count == 1:
+        value = 0
+        for index, palette_index in enumerate(indices):
+            if palette_index:
+                value |= 0x80 >> index
+        return bytes([value])
+    raise ValueError(f"Unsupported indexed test bit depth {bit_count}")

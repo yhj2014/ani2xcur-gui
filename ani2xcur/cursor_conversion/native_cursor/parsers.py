@@ -306,7 +306,7 @@ def _decode_dib_payload(payload: bytes, entry_width: int, entry_height: int) -> 
         raise ValueError(f"Unsupported DIB plane count {planes}")
     if compression != 0:
         raise ValueError(f"Unsupported compressed DIB cursor payload {compression}")
-    if bit_count not in {24, 32}:
+    if bit_count not in {1, 4, 8, 24, 32}:
         raise ValueError(f"Unsupported DIB cursor bit depth {bit_count}")
 
     width = abs(width) or entry_width
@@ -315,9 +315,17 @@ def _decode_dib_payload(payload: bytes, entry_width: int, entry_height: int) -> 
     if width <= 0 or height <= 0:
         raise ValueError("Invalid DIB cursor dimensions")
 
+    palette: list[tuple[int, int, int]] = []
     color_table_size = 0
     if bit_count <= 8:
-        color_table_size = (colors_used or (1 << bit_count)) * 4
+        color_table_entries = colors_used or (1 << bit_count)
+        color_table_size = color_table_entries * 4
+        color_table_end = header_size + color_table_size
+        if len(payload) < color_table_end:
+            raise ValueError("DIB cursor color table is truncated")
+        for color_offset in range(header_size, color_table_end, 4):
+            b, g, r, _ = payload[color_offset : color_offset + 4]
+            palette.append((r, g, b))
     pixel_offset = header_size + color_table_size
     row_stride = ((width * bit_count + 31) // 32) * 4
     xor_size = row_stride * height
@@ -347,9 +355,15 @@ def _decode_dib_payload(payload: bytes, entry_width: int, entry_height: int) -> 
                 src = source_row + x * 4
                 b, g, r, a = payload[src : src + 4]
                 alpha = a if use_alpha_channel else 255
-            else:
+            elif bit_count == 24:
                 src = source_row + x * 3
                 b, g, r = payload[src : src + 3]
+                alpha = 255
+            else:
+                palette_index = _decode_indexed_dib_pixel(payload, source_row, x, bit_count)
+                if palette_index >= len(palette):
+                    raise ValueError(f"DIB cursor palette index {palette_index} is out of range")
+                r, g, b = palette[palette_index]
                 alpha = 255
 
             if has_mask:
@@ -360,6 +374,20 @@ def _decode_dib_payload(payload: bytes, entry_width: int, entry_height: int) -> 
             rgba[dst : dst + 4] = bytes((r, g, b, alpha))
 
     return Image.frombytes("RGBA", (width, height), bytes(rgba))
+
+
+def _decode_indexed_dib_pixel(payload: bytes, row_start: int, x: int, bit_count: int) -> int:
+    if bit_count == 8:
+        return payload[row_start + x]
+    if bit_count == 4:
+        byte = payload[row_start + x // 2]
+        if x % 2 == 0:
+            return byte >> 4
+        return byte & 0x0F
+    if bit_count == 1:
+        byte = payload[row_start + x // 8]
+        return 1 if byte & (0x80 >> (x % 8)) else 0
+    raise ValueError(f"Unsupported indexed DIB cursor bit depth {bit_count}")
 
 
 def _unpremultiply_bgra_to_rgba(source: bytes) -> bytes:
