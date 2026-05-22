@@ -73,7 +73,7 @@ def test_windows_writers_round_trip_static_and_animated_cursors():
     assert [frame.images[0].hotspot for frame in parsed_ani] == [(3, 4), (5, 6)]
 
 
-def test_windows_writers_use_win2xcur_compatible_png_payloads():
+def test_windows_writers_use_png_for_static_and_dib_for_animated_payloads():
     image = Image.new("RGBA", (2, 2), (255, 255, 255, 255))
     image.putpixel((1, 0), (0, 0, 0, 0))
     frame = CursorFrame([CursorImage(image, (1, 1), 2)], delay=0.1)
@@ -83,9 +83,10 @@ def test_windows_writers_use_win2xcur_compatible_png_payloads():
 
     cur_payload = _first_cur_payload(cur_blob)
     ani_payload = _first_cur_payload(_first_ani_icon_cur(ani_blob))
-    for payload in [cur_payload, ani_payload]:
-        assert payload.startswith(b"\x89PNG\r\n\x1a\n")
-        assert _png_ihdr(payload) == (2, 2, 8, 4, 0, 0, 0)
+    assert cur_payload.startswith(b"\x89PNG\r\n\x1a\n")
+    assert _png_ihdr(cur_payload) == (2, 2, 8, 4, 0, 0, 0)
+    assert not ani_payload.startswith(b"\x89PNG\r\n\x1a\n")
+    assert struct.unpack_from("<IiiHHI", ani_payload, 0) == (40, 2, 4, 1, 32, 0)
 
     assert _ani_display_rate(ani_blob) == 1
     parsed = parse_blob(cur_blob)
@@ -115,6 +116,21 @@ def test_windows_ani_writer_keeps_only_largest_high_resolution_frame_image():
     assert len(payloads) == 1
     assert not payloads[0].startswith(b"\x89PNG\r\n\x1a\n")
     assert struct.unpack_from("<IiiHHI", payloads[0], 0) == (40, 256, 512, 1, 32, 0)
+
+
+def test_windows_ani_writer_keeps_single_standard_image_for_normal_frames():
+    small = CursorImage(Image.new("RGBA", (24, 24), (255, 0, 0, 255)), (3, 3), 24)
+    standard = CursorImage(Image.new("RGBA", (32, 32), (0, 255, 0, 255)), (4, 4), 32)
+    large = CursorImage(Image.new("RGBA", (96, 96), (0, 0, 255, 255)), (12, 12), 96)
+
+    ani_blob = to_ani([CursorFrame([small, standard, large], delay=0.1)])
+    payloads = _cur_payloads(_first_ani_icon_cur(ani_blob))
+    frames = parse_blob(ani_blob)
+
+    assert len(payloads) == 1
+    assert not payloads[0].startswith(b"\x89PNG\r\n\x1a\n")
+    assert struct.unpack_from("<IiiHHI", payloads[0], 0) == (40, 32, 64, 1, 32, 0)
+    assert [(image.image.size, image.hotspot, image.nominal) for image in frames[0].images] == [((32, 32), (4, 4), 32)]
 
 
 def test_parse_32bit_dib_cur_uses_alpha_channel():

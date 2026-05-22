@@ -32,6 +32,7 @@ logger = get_logger(
 )
 
 ANI_ICON_FLAG = 0x1
+WINDOWS_ANIMATED_STANDARD_SIZE = 32
 WINDOWS_HIGH_RES_SIZE = 96
 
 
@@ -120,7 +121,7 @@ def _to_cur(frame: CursorFrame, *, animated_frame: bool) -> bytes:
         if not 0 <= hotspot_x <= width or not 0 <= hotspot_y <= height:
             raise ValueError(f"Cursor hotspot is outside the image: {cursor.hotspot}")
 
-        payload = _image_to_dib(image) if _is_high_res_cursor_image(cursor) else _image_to_png(image)
+        payload = _image_to_dib(image) if animated_frame or _is_high_res_cursor_image(cursor) else _image_to_png(image)
         image_data.append(payload)
         directory.append(
             ICON_DIR_ENTRY.pack(
@@ -222,11 +223,24 @@ def _frame_delay_to_jiffies(delay: float, animated: bool) -> int:
 def _select_windows_cursor_images(images: list[CursorImage], *, animated_frame: bool) -> list[CursorImage]:
     sorted_images = sorted(images, key=lambda cursor: (cursor.nominal, cursor.image.width, cursor.image.height))
     high_res_images = [cursor for cursor in sorted_images if _is_high_res_cursor_image(cursor)]
+    if animated_frame:
+        if not high_res_images:
+            return [_select_windows_animated_image(sorted_images)]
+        return [max(high_res_images, key=lambda cursor: (cursor.nominal, cursor.image.width, cursor.image.height))]
     if not high_res_images:
         return sorted_images
-    if animated_frame:
-        return [max(high_res_images, key=lambda cursor: (cursor.nominal, cursor.image.width, cursor.image.height))]
     return [cursor for cursor in sorted_images if cursor.nominal >= WINDOWS_HIGH_RES_SIZE or _is_high_res_cursor_image(cursor)]
+
+
+def _select_windows_animated_image(images: list[CursorImage]) -> CursorImage:
+    return min(
+        images,
+        key=lambda cursor: (
+            abs(cursor.nominal - WINDOWS_ANIMATED_STANDARD_SIZE),
+            abs(max(cursor.image.size) - WINDOWS_ANIMATED_STANDARD_SIZE),
+            cursor.nominal,
+        ),
+    )
 
 
 def _is_high_res_cursor_image(cursor: CursorImage) -> bool:
