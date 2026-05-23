@@ -89,6 +89,22 @@ def _section_constant(
     return parsed[section_name].get("constant", [])
 
 
+def _copy_file_section_name(
+    value: str,
+) -> str | None:
+    """从 CopyFiles/DestinationDirs 条目中提取复制节名。"""
+    name = value.strip().strip('"').strip("'")
+    if not name or name.startswith("@"):
+        return None
+    return name
+
+
+def _looks_like_cursor_file_list(
+    values: list[str],
+) -> bool:
+    return any(value.strip().strip('"').strip("'").lower().endswith((".ani", ".cur")) for value in values)
+
+
 def _ensure_str_dict(
     data: dict[str, str | list[str]],
     section_name: str,
@@ -112,7 +128,8 @@ def preprocess_inf_to_cursor_scheme(
     - DestinationDirs: 直接返回 var 映射 (值可能为 str 或 list[str])
     - Scheme.Reg: Scheme.Reg 节的常量行列表
     - Wreg: Wreg 节的常量行列表
-    - Scheme.Cur: Scheme.Cur 节的常量行列表
+    - Scheme.Cur: 光标文件复制节的常量行列表。优先读取 Scheme.Cur；若 INF
+      使用 CopyFiles 指向其他节名（如 Scheme.ani），则归一化保存到此键。
     - Strings: Strings 节的 var 映射
 
     Args:
@@ -151,10 +168,27 @@ def preprocess_inf_to_cursor_scheme(
     if "Wreg" in parsed:
         out["Wreg"] = _section_constant(parsed, "Wreg")
 
-    if "Scheme.Cur" in parsed:
-        out["Scheme.Cur"] = _section_constant(parsed, "Scheme.Cur")
+    copy_file_sections = ["Scheme.Cur"]
+    if "DefaultInstall" in out:
+        for value in out["DefaultInstall"].get("CopyFiles", []):
+            section_name = _copy_file_section_name(value)
+            if section_name is not None and section_name not in copy_file_sections:
+                copy_file_sections.append(section_name)
+    if "DestinationDirs" in out:
+        for value in out["DestinationDirs"]:
+            section_name = _copy_file_section_name(value)
+            if section_name is not None and section_name not in copy_file_sections:
+                copy_file_sections.append(section_name)
+
+    for section_name in copy_file_sections:
+        if section_name not in parsed:
+            continue
+        cursor_files = _section_constant(parsed, section_name)
+        if section_name == "Scheme.Cur" or _looks_like_cursor_file_list(cursor_files):
+            out["Scheme.Cur"] = cursor_files
+            break
     else:
-        raise ValueError("未找到 Scheme.Cur 键, 鼠标指针配置不完整")
+        raise ValueError("未找到光标文件复制节, 鼠标指针配置不完整")
 
     if "Strings" in parsed:
         out["Strings"] = _ensure_str_dict(_section_var(parsed, "Strings"), "Strings")
