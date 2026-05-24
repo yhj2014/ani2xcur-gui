@@ -107,10 +107,10 @@ def extract_scheme_info_from_inf(
 
     cursor_map: CursorMap = {}
     inf_file_content = parse_inf_file_content(inf_file)
-    scheme_reg = parse_scheme_reg_string(inf_file_content["Scheme.Reg"][0])
+    scheme_reg = parse_scheme_reg_string(inf_file_content["SchemeReg"][0])
     vars_dict = inf_file_content["Strings"]
     scheme_name = vars_dict["SCHEME_NAME"]
-    cursor_files = inf_file_content["Scheme.Cur"]
+    cursor_files = inf_file_content["CursorFiles"]
 
     # 检查 [Scheme.Reg] 长度合法性
     if len(scheme_reg) != 5:

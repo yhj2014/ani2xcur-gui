@@ -2,9 +2,6 @@
 
 from pathlib import Path
 from typing import (
-    Any,
-    Literal,
-    Protocol,
     TypedDict,
 )
 
@@ -20,57 +17,17 @@ CursorShemeINF = TypedDict(
         "Version": dict[str, str | list[str]],  # 版本信息
         "DefaultInstall": dict[str, list[str]],  # 默认需要安装的配置
         "DestinationDirs": dict[str, str | list[str]],  # 目的路径
-        "Scheme.Reg": list[str],  # 鼠标指针方案在注册表中的存储位置
-        "Wreg": list[str],  # 当前应用的鼠标指针设置
-        "Scheme.Cur": list[str],  # 需要复制到系统中的光标文件名列表
+        "CopyFiles": dict[str, list[str]],  # CopyFiles 引用的真实复制节内容
+        "AddReg": dict[str, list[str]],  # AddReg 引用的真实注册表节内容
+        "CursorFiles": list[str],  # 最终用于转换/安装的光标文件名列表
+        "CursorFilesSection": str,  # CursorFiles 来源节名
+        "SchemeReg": list[str],  # 最终用于方案注册的注册表配置
+        "SchemeRegSection": str,  # SchemeReg 来源节名
         "Strings": dict[str, str],  # 配置中使用的变量
     },
     total=False,
 )
 """预处理后的鼠标指针配置 INF 结构"""
-
-INFSectionName = Literal[
-    "Version",  # 版本信息
-    "DefaultInstall",  # 默认需要安装的配置
-    "DestinationDirs",  # 目的路径
-    "Scheme.Reg",  # 鼠标指针方案在注册表中的存储位置
-    "Scheme.Cur",  # 需要复制到系统中的光标文件名列表
-    "Wreg",  # 当前应用的鼠标指针设置
-    "Strings",  # 配置中使用的变量
-]
-"""INF 文件已知键名"""
-
-
-class INFSectionDict(Protocol):
-    """INF 选项结构字典"""
-
-    def get(  # pylint: disable=missing-function-docstring
-        self,
-        key: Literal["var", "constant"],
-        default: Any = ...,
-    ) -> str | dict[str, str | list[str]] | Any:
-        """获取 INF 节中的指定字段。
-
-        Args:
-            key: 要获取的字段名
-            default: 字段不存在时返回的默认值
-        Returns:
-            str | dict[str, str | list[str]] | Any: 字段值或默认值
-        """
-        ...
-
-
-class KnownINFSections(Protocol):
-    """已知的 INF 结构"""
-
-    def __getitem__(
-        self,
-        key: INFSectionName,
-    ) -> INFSectionDict: ...
-    def __contains__(
-        self,
-        key: object,
-    ) -> bool: ...
 
 
 def _section_var(
@@ -89,14 +46,41 @@ def _section_constant(
     return parsed[section_name].get("constant", [])
 
 
-def _copy_file_section_name(
+def _required_section_var(
+    parsed: ParsedINF,
+    section_name: str,
+) -> dict[str, str | list[str]]:
+    if section_name not in parsed:
+        raise ValueError(f"未找到 {section_name} 键, 鼠标指针配置不完整")
+    return _section_var(parsed, section_name)
+
+
+def _ensure_list(
+    value: str | list[str],
+) -> list[str]:
+    return value if isinstance(value, list) else [value]
+
+
+def _install_section_name(
     value: str,
 ) -> str | None:
-    """从 CopyFiles/DestinationDirs 条目中提取复制节名。"""
+    """从 CopyFiles/AddReg 条目中提取节名。"""
     name = value.strip().strip('"').strip("'")
     if not name or name.startswith("@"):
         return None
     return name
+
+
+def _section_names_from_default_install(
+    default_install: dict[str, list[str]],
+    key: str,
+) -> list[str]:
+    section_names: list[str] = []
+    for value in default_install.get(key, []):
+        section_name = _install_section_name(value)
+        if section_name is not None and section_name not in section_names:
+            section_names.append(section_name)
+    return section_names
 
 
 def _looks_like_cursor_file_list(
@@ -120,17 +104,11 @@ def _ensure_str_dict(
 def preprocess_inf_to_cursor_scheme(
     parsed: ParsedINF,
 ) -> CursorShemeINF:
-    """将 ParsedINF 处理为鼠标指针已知键的扁平结构
+    """将 ParsedINF 处理为鼠标指针安装需要的结构
 
-    返回包含常见节的字典:
-    - Version: 该节的 var & constant 原样返回 (若存在)
-    - DefaultInstall: 各键保证为 list[str]
-    - DestinationDirs: 直接返回 var 映射 (值可能为 str 或 list[str])
-    - Scheme.Reg: Scheme.Reg 节的常量行列表
-    - Wreg: Wreg 节的常量行列表
-    - Scheme.Cur: 光标文件复制节的常量行列表。优先读取 Scheme.Cur；若 INF
-      使用 CopyFiles 指向其他节名（如 Scheme.ani），则归一化保存到此键。
-    - Strings: Strings 节的 var 映射
+    Version、DefaultInstall、DestinationDirs 和 Strings 为必需节。CopyFiles、
+    AddReg 的真实节名来自 DefaultInstall，不再假设 Scheme.Cur、Scheme.Reg
+    或 Wreg 等固定节名。
 
     Args:
         parsed (ParsedINF): INF 类型字典
@@ -140,60 +118,57 @@ def preprocess_inf_to_cursor_scheme(
         ValueError: 当鼠标指针配置文件不完整时
     """
 
-    def _ensure_list(
-        v: str | list[str],
-    ) -> list[str]:
-        return v if isinstance(v, list) else [v]
-
     out: CursorShemeINF = {}
 
-    if "Version" in parsed:
-        out["Version"] = _section_var(parsed, "Version")
+    out["Version"] = _required_section_var(parsed, "Version")
 
-    if "DefaultInstall" in parsed:
-        di: dict[str, list[str]] = {}
-        for k, v in _section_var(parsed, "DefaultInstall").items():
-            di[k] = _ensure_list(v)
-        out["DefaultInstall"] = di
+    default_install: dict[str, list[str]] = {}
+    for key, value in _required_section_var(parsed, "DefaultInstall").items():
+        default_install[key] = _ensure_list(value)
+    out["DefaultInstall"] = default_install
 
-    if "DestinationDirs" in parsed:
-        out["DestinationDirs"] = _section_var(parsed, "DestinationDirs")
+    out["DestinationDirs"] = _required_section_var(parsed, "DestinationDirs")
+    out["Strings"] = _ensure_str_dict(_required_section_var(parsed, "Strings"), "Strings")
 
-    # 一些节在不同 INF 中可能为 var 或 constant，这里以常见样式提取
-    if "Scheme.Reg" in parsed:
-        out["Scheme.Reg"] = _section_constant(parsed, "Scheme.Reg")
-    else:
-        raise ValueError("未找到 Scheme.Reg 键, 鼠标指针配置不完整")
+    copy_file_sections = _section_names_from_default_install(default_install, "CopyFiles")
+    if not copy_file_sections:
+        raise ValueError("DefaultInstall 中未找到有效 CopyFiles 节引用, 鼠标指针配置不完整")
 
-    if "Wreg" in parsed:
-        out["Wreg"] = _section_constant(parsed, "Wreg")
-
-    copy_file_sections = ["Scheme.Cur"]
-    if "DefaultInstall" in out:
-        for value in out["DefaultInstall"].get("CopyFiles", []):
-            section_name = _copy_file_section_name(value)
-            if section_name is not None and section_name not in copy_file_sections:
-                copy_file_sections.append(section_name)
-    if "DestinationDirs" in out:
-        for value in out["DestinationDirs"]:
-            section_name = _copy_file_section_name(value)
-            if section_name is not None and section_name not in copy_file_sections:
-                copy_file_sections.append(section_name)
+    copy_files: dict[str, list[str]] = {}
+    for section_name in copy_file_sections:
+        if section_name in parsed:
+            copy_files[section_name] = _section_constant(parsed, section_name)
+    out["CopyFiles"] = copy_files
 
     for section_name in copy_file_sections:
-        if section_name not in parsed:
+        cursor_files = copy_files.get(section_name)
+        if cursor_files is None:
             continue
-        cursor_files = _section_constant(parsed, section_name)
-        if section_name == "Scheme.Cur" or _looks_like_cursor_file_list(cursor_files):
-            out["Scheme.Cur"] = cursor_files
+        if _looks_like_cursor_file_list(cursor_files):
+            out["CursorFiles"] = cursor_files
+            out["CursorFilesSection"] = section_name
             break
     else:
         raise ValueError("未找到光标文件复制节, 鼠标指针配置不完整")
 
-    if "Strings" in parsed:
-        out["Strings"] = _ensure_str_dict(_section_var(parsed, "Strings"), "Strings")
+    add_reg_sections = _section_names_from_default_install(default_install, "AddReg")
+    if not add_reg_sections:
+        raise ValueError("DefaultInstall 中未找到有效 AddReg 节引用, 鼠标指针配置不完整")
+
+    add_reg: dict[str, list[str]] = {}
+    for section_name in add_reg_sections:
+        if section_name in parsed:
+            add_reg[section_name] = _section_constant(parsed, section_name)
+    out["AddReg"] = add_reg
+
+    for section_name in add_reg_sections:
+        scheme_reg = add_reg.get(section_name)
+        if scheme_reg:
+            out["SchemeReg"] = scheme_reg
+            out["SchemeRegSection"] = section_name
+            break
     else:
-        raise ValueError("未找到 Strings 键, 鼠标指针配置不完整")
+        raise ValueError("未找到方案注册表配置节, 鼠标指针配置不完整")
 
     return out
 

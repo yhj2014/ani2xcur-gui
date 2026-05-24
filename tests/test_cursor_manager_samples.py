@@ -87,7 +87,7 @@ def test_export_windows_cursor_copies_real_files_and_writes_inf(monkeypatch, win
     parsed = parse_inf_file_content(exported_dir / "AutoSetup.inf")
 
     assert parsed["Strings"]["SCHEME_NAME"] == "DMZ-White"
-    assert len(parsed["Scheme.Cur"]) == len(CURSOR_KEYS["win"])
+    assert len(parsed["CursorFiles"]) == len(CURSOR_KEYS["win"])
     assert (exported_dir / "Arrow.cur").is_file()
     assert (exported_dir / "Wait.ani").is_file()
 

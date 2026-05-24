@@ -70,7 +70,7 @@ def test_x11_cursor_to_win_uses_real_linux_sample(monkeypatch, linux_theme_file:
     scheme_info = extract_scheme_info_from_inf(inf_file)
 
     assert parsed["Strings"]["SCHEME_NAME"] == "DMZ-White"
-    assert len(parsed["Scheme.Cur"]) == len(CURSOR_KEYS["win"])
+    assert len(parsed["CursorFiles"]) == len(CURSOR_KEYS["win"])
     assert scheme_info["scheme_name"] == "DMZ-White"
 
     for key in CURSOR_KEYS["win"]:

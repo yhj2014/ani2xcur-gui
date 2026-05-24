@@ -82,7 +82,7 @@ def test_find_inf_file_accepts_copyfiles_cursor_section_alias(tmp_path: Path):
 
     assert found is not None
     assert found.name == "AutoSetup.inf"
-    assert parse_inf_file_content(found)["Scheme.Cur"] == ["Arrow.ani", "Hand.cur"]
+    assert parse_inf_file_content(found)["CursorFiles"] == ["Arrow.ani", "Hand.cur"]
 
 
 def test_archive_roundtrip_and_find_desktop_entry_file(linux_cursor_dir: Path, tmp_path: Path):
