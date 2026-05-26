@@ -38,6 +38,7 @@ from ani2xcur.cursor_conversion.native_cursor.transforms import (
 from ani2xcur.cursor_conversion.native_cursor.writers import to_xcursor
 from ani2xcur.file_operations.file_manager import (
     copy_files,
+    copy_files_merge,
     save_create_symlink,
 )
 
@@ -153,7 +154,7 @@ def win_cursor_to_x11(
         save_dir = output_path / cursor_name
 
         # 导出文件到输出文件夹
-        copy_files((tmp_dir / cursor_name), save_dir)
+        copy_files_merge((tmp_dir / cursor_name), save_dir)
 
     return save_dir
 
@@ -317,7 +318,7 @@ def x11_cursor_to_win(
         save_dir = output_path / cursor_name
 
         # 导出文件到输出文件夹
-        copy_files((tmp_dir / cursor_name), save_dir)
+        copy_files_merge((tmp_dir / cursor_name), save_dir)
 
     return save_dir
 

@@ -33,7 +33,7 @@ def remove_files(
         OSError: 删除过程中的系统错误
     """
 
-    if not path.exists():
+    if not _path_exists(path):
         logger.error("路径不存在: '%s'", path)
         raise ValueError(f"要删除的 {path} 路径不存在")
 
@@ -48,9 +48,14 @@ def remove_files(
             func(path_str)
 
     try:
-        if path.is_file() or path.is_symlink():
-            # 处理文件或符号链接
-            logger.debug("删除文件或软链接: '%s'", path)
+        if path.is_symlink():
+            # 处理符号链接, 不跟随链接修改目标权限
+            logger.debug("删除软链接: '%s'", path)
+            path.unlink()
+
+        elif path.is_file():
+            # 处理文件
+            logger.debug("删除文件: '%s'", path)
             os.chmod(path, stat.S_IWRITE)
             path.unlink()
 
@@ -62,6 +67,27 @@ def remove_files(
     except OSError as e:
         logger.error("删除失败: '%s' - 原因: %s", path, e)
         raise e
+
+
+def _path_exists(
+    path: Path,
+) -> bool:
+    """判断路径是否存在, 包括失效软链接"""
+    return path.exists() or path.is_symlink()
+
+
+def _copy_symlink(
+    src: Path,
+    dst: Path,
+) -> None:
+    """复制软链接本身, 不复制软链接指向的内容"""
+    if dst.exists() and dst.is_dir() and not dst.is_symlink():
+        raise IsADirectoryError(f"目标路径已存在且为目录: {dst}")
+
+    if _path_exists(dst):
+        remove_files(dst)
+
+    dst.symlink_to(os.readlink(src), target_is_directory=src.is_dir())
 
 
 def copy_files(
@@ -80,17 +106,17 @@ def copy_files(
         ValueError: 路径逻辑错误（如循环复制）时
     """
     try:
-        # 转换为绝对路径以进行准确的路径比对
-        src_path = src.resolve()
-        dst_path = dst.resolve()
+        # 保留软链接路径本身, 只在循环检测时解析真实路径
+        src_path = src.absolute()
+        dst_path = dst.absolute()
 
         # 检查源是否存在
-        if not src_path.exists():
+        if not _path_exists(src_path):
             logger.error("源路径不存在: '%s'", src)
             raise FileNotFoundError(f"源路径不存在: {src}")
 
         # 防止递归复制（例如将目录复制到其自身的子目录中）
-        if src_path.is_dir() and dst_path.is_relative_to(src_path):
+        if src_path.is_dir() and not src_path.is_symlink() and dst_path.resolve().is_relative_to(src_path.resolve()):
             logger.error("不能将目录复制到自身或其子目录中: '%s'", src)
             raise ValueError(f"不能将目录复制到自身或其子目录中: {src}")
 
@@ -104,7 +130,9 @@ def copy_files(
         dst_file.parent.mkdir(parents=True, exist_ok=True)
 
         # 复制操作
-        if src_path.is_file():
+        if src_path.is_symlink():
+            _copy_symlink(src_path, dst_file)
+        elif src_path.is_file():
             # copy2 会尽量保留文件元数据
             logger.debug("复制文件: '%s' -> '%s'", src_path, dst_file)
             shutil.copy2(src_path, dst_file)
@@ -125,8 +153,212 @@ def copy_files(
     except OSError as e:
         logger.error("复制失败: %s", e)
         raise e
-    except Exception as e:
-        logger.error("发生非预期错误: %s", e)
+
+
+def copy_files_merge(
+    src: Path,
+    dst: Path,
+) -> None:
+    """复制文件或目录, 当源为目录时直接合并到目标目录
+
+    与 copy_files 的区别:
+    当源路径为目录时, 不会在目标目录下额外创建源目录同名文件夹, 而是
+    将源目录中的内容直接复制并合并到目标路径。
+
+    Args:
+        src (Path): 源文件路径
+        dst (Path): 复制文件到指定的路径
+    Raises:
+        PermissionError: 没有权限复制文件时
+        OSError: 复制文件失败时
+        FileNotFoundError: 源文件未找到时
+        ValueError: 路径逻辑错误（如循环复制）时
+    """
+    try:
+        src_path = src.absolute()
+        dst_path = dst.absolute()
+
+        if not _path_exists(src_path):
+            logger.error("源路径不存在: '%s'", src)
+            raise FileNotFoundError(f"源路径不存在: {src}")
+
+        if src_path.is_dir() and not src_path.is_symlink():
+            if src_path.resolve() == dst_path.resolve():
+                return
+
+            if dst_path.resolve().is_relative_to(src_path.resolve()):
+                logger.error("不能将目录复制到自身的子目录中: '%s'", src)
+                raise ValueError(f"不能将目录复制到自身的子目录中: {src}")
+
+            dst_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                shutil.copytree(src_path, dst_path, symlinks=True, dirs_exist_ok=True)
+            except shutil.Error:
+                shutil.copytree(src_path, dst_path, symlinks=False, dirs_exist_ok=True)
+            return
+
+        if src_path == dst_path:
+            return
+
+        if dst_path.exists() and dst_path.is_dir():
+            dst_file = dst_path / src_path.name
+        else:
+            dst_file = dst_path
+
+        dst_file.parent.mkdir(parents=True, exist_ok=True)
+        if src_path.is_symlink():
+            _copy_symlink(src_path, dst_file)
+        else:
+            shutil.copy2(src_path, dst_file)
+
+    except PermissionError as e:
+        logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
+        raise e
+    except OSError as e:
+        logger.error("复制失败: %s", e)
+        raise e
+
+
+def move_files(
+    src: Path,
+    dst: Path,
+) -> None:
+    """移动文件或目录
+
+    Args:
+        src (Path): 源路径
+        dst (Path): 目标路径
+    Raises:
+        FileNotFoundError: 源路径不存在时
+        PermissionError: 权限不足以移动文件时
+        OSError: 移动文件失败时
+        ValueError: 路径逻辑错误（如循环移动）时
+    """
+    try:
+        src_path = src.absolute()
+        dst_path = dst.absolute()
+
+        if not _path_exists(src_path):
+            logger.error("源路径不存在: '%s'", src)
+            raise FileNotFoundError(f"源路径不存在: {src}")
+
+        if src_path == dst_path:
+            return
+
+        # 确定目的路径
+        if dst_path.exists() and dst_path.is_dir():
+            final_dst = dst_path / src_path.name
+        else:
+            final_dst = dst_path
+
+        if src_path.is_file() or src_path.is_symlink():
+            if final_dst.is_file() or final_dst.is_symlink():
+                remove_files(final_dst)
+
+            final_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src_path), str(final_dst))
+            return
+
+        if src_path.is_dir():
+            src_real = src_path.resolve()
+            final_dst_real = final_dst.resolve()
+            if final_dst_real.is_relative_to(src_real):
+                logger.error("不能将目录移动到自身或其子目录中: '%s'", src)
+                raise ValueError(f"不能将目录移动到自身或其子目录中: {src}")
+
+            if not final_dst.exists():
+                final_dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(src_path), str(final_dst))
+            elif not final_dst.is_dir():
+                remove_files(final_dst)
+                shutil.move(str(src_path), str(final_dst))
+            else:
+                logger.debug("目标目录已存在，执行合并操作: '%s' -> '%s'", src_path, final_dst)
+                for item in src_path.iterdir():
+                    move_files(item, final_dst / item.name)
+
+                if src_path.exists():
+                    src_path.rmdir()
+
+    except PermissionError as e:
+        logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
+        raise e
+    except OSError as e:
+        logger.error("移动失败: %s", e)
+        raise e
+
+
+def move_files_merge(
+    src: Path,
+    dst: Path,
+) -> None:
+    """移动文件或目录, 当源为目录时直接合并到目标目录
+
+    与 move_files 的区别:
+    当源路径为目录时, 不会在目标目录下额外创建源目录同名文件夹, 而是
+    将源目录中的内容直接移动并合并到目标路径。
+
+    Args:
+        src (Path): 源路径
+        dst (Path): 目标路径
+    Raises:
+        FileNotFoundError: 源路径不存在时
+        PermissionError: 权限不足以移动文件时
+        OSError: 移动文件失败时
+        ValueError: 路径逻辑错误（如循环移动）时
+    """
+    try:
+        src_path = src.absolute()
+        dst_path = dst.absolute()
+
+        if not _path_exists(src_path):
+            logger.error("源路径不存在: '%s'", src)
+            raise FileNotFoundError(f"源路径不存在: {src}")
+
+        if src_path == dst_path:
+            return
+
+        if src_path.is_file() or src_path.is_symlink():
+            if dst_path.exists() and dst_path.is_dir():
+                final_dst = dst_path / src_path.name
+            else:
+                final_dst = dst_path
+
+            if final_dst.is_file() or final_dst.is_symlink():
+                remove_files(final_dst)
+
+            final_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src_path), str(final_dst))
+            return
+
+        if src_path.is_dir():
+            if dst_path.resolve().is_relative_to(src_path.resolve()):
+                logger.error("不能将目录移动到自身的子目录中: '%s'", src)
+                raise ValueError(f"不能将目录移动到自身的子目录中: {src}")
+
+            if dst_path.exists() and not dst_path.is_dir():
+                remove_files(dst_path)
+
+            dst_path.mkdir(parents=True, exist_ok=True)
+            logger.debug("目标目录执行直接合并操作: '%s' -> '%s'", src_path, dst_path)
+            for item in src_path.iterdir():
+                if item.is_symlink():
+                    final_dst = dst_path / item.name
+                    if final_dst.exists() or final_dst.is_symlink():
+                        remove_files(final_dst)
+                    final_dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(item), str(final_dst))
+                else:
+                    move_files_merge(item, dst_path / item.name)
+
+            if src_path.exists():
+                src_path.rmdir()
+
+    except PermissionError as e:
+        logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
+        raise e
+    except OSError as e:
+        logger.error("移动失败: %s", e)
         raise e
 
 
