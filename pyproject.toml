@@ -28,8 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "Pillow>=10.0",
-    "typer",
-    "click",
+    "typer>=0.26.7",
     "zstandard",
     "py7zr",
     "rarfile",

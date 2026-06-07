@@ -4,7 +4,8 @@ import sys
 import traceback
 
 import typer
-from click.exceptions import Abort, ClickException, Exit
+from typer import Abort, Exit
+from typer._click.exceptions import ClickException
 
 from ani2xcur.cli.cli import typer_factory
 from ani2xcur.config import (

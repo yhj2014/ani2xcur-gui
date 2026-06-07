@@ -42,6 +42,23 @@ SUPPORTED_ARCHIVE_FORMAT = [
 ]
 """支持的压缩包格式列表"""
 
+ArchiveFormat = Literal[
+    ".zip",
+    ".7z",
+    ".rar",
+    ".tar",
+    ".tar.lzma",
+    ".tar.bz2",
+    ".tar.gz",
+    ".tar.xz",
+    ".tar.zst",
+    ".tgz",
+    ".tbz2",
+    ".txz",
+    ".tlz",
+]
+"""支持的压缩包格式类型"""
+
 SUPPORTED_EXTRACT_ARCHIVE_FORMAT = SUPPORTED_ARCHIVE_FORMAT
 """支持解压的压缩包格式列表"""
 

@@ -9,7 +9,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import typer
-import click
 from rich.console import Console
 from rich.table import Table
 from rich import box
@@ -48,8 +47,8 @@ from ani2xcur.smart_finder import (
     find_desktop_entry_file,
 )
 from ani2xcur.file_operations.archive_manager import (
+    ArchiveFormat,
     create_archive,
-    SUPPORTED_ARCHIVE_FORMAT,
 )
 
 logger = get_logger(
@@ -237,10 +236,9 @@ def export_cursor(
         ),
     ] = False,
     compress_format: Annotated[
-        str,
+        ArchiveFormat,
         typer.Option(
             help="打包成压缩包时使用的压缩包格式",
-            click_type=click.Choice(SUPPORTED_ARCHIVE_FORMAT),
         ),
     ] = ".zip",
 ) -> None:

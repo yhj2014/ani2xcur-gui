@@ -6,7 +6,6 @@ from tempfile import TemporaryDirectory
 from typing import Annotated
 
 import typer
-import click
 
 from ani2xcur.cursor_conversion.convert import (
     win_cursor_to_x11,
@@ -28,8 +27,8 @@ from ani2xcur.config import (
 )
 from ani2xcur.logger import get_logger
 from ani2xcur.file_operations.archive_manager import (
+    ArchiveFormat,
     create_archive,
-    SUPPORTED_ARCHIVE_FORMAT,
 )
 from ani2xcur.utils import is_http_or_https
 from ani2xcur.manager.linux_cur_manager import install_linux_cursor
@@ -125,10 +124,9 @@ def win2xcur(
         ),
     ] = False,
     compress_format: Annotated[
-        str,
+        ArchiveFormat,
         typer.Option(
             help="打包成压缩包时使用的压缩包格式",
-            click_type=click.Choice(SUPPORTED_ARCHIVE_FORMAT),
         ),
     ] = ".7z",
     install: Annotated[
@@ -260,10 +258,9 @@ def x2wincur(
         ),
     ] = False,
     compress_format: Annotated[
-        str,
+        ArchiveFormat,
         typer.Option(
             help="打包成压缩包时使用的压缩包格式",
-            click_type=click.Choice(SUPPORTED_ARCHIVE_FORMAT),
         ),
     ] = ".7z",
     install: Annotated[

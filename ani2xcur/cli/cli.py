@@ -4,9 +4,9 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-import click
 import typer
-from typer.core import TyperCommand, TyperGroup
+from typer import _click
+from typer.core import TyperCommand, TyperGroup, TyperOption
 
 from ani2xcur.config import LOGGER_NAME
 
@@ -14,7 +14,7 @@ from ani2xcur.config import LOGGER_NAME
 DEBUG_OPTION_HELP = "输出调试日志, 便于排查转换、安装和桌面刷新问题"
 
 
-def _debug_option_callback(ctx: click.Context, _param: click.Parameter, value: bool) -> None:
+def _debug_option_callback(ctx: _click.Context, _param: _click.Parameter, value: bool) -> None:
     """启用调试日志输出。"""
     if value and not ctx.resilient_parsing:
         app_logger = logging.getLogger(LOGGER_NAME)
@@ -22,10 +22,10 @@ def _debug_option_callback(ctx: click.Context, _param: click.Parameter, value: b
         app_logger.debug("已启用 debug 日志")
 
 
-def _make_debug_option() -> click.Option:
+def _make_debug_option() -> TyperOption:
     """创建可挂载到任意命令层级的 debug 选项。"""
-    return click.Option(
-        ["--debug"],
+    return TyperOption(
+        param_decls=["--debug"],
         is_flag=True,
         is_eager=True,
         expose_value=False,
@@ -34,12 +34,12 @@ def _make_debug_option() -> click.Option:
     )
 
 
-def _has_debug_option(params: list[click.Parameter] | None) -> bool:
+def _has_debug_option(params: list[_click.Parameter] | None) -> bool:
     """检查命令参数中是否已经存在 debug 选项。"""
-    return any(isinstance(param, click.Option) and "--debug" in param.opts for param in params or [])
+    return any(isinstance(param, TyperOption) and "--debug" in param.opts for param in params or [])
 
 
-def _with_debug_option(params: list[click.Parameter] | None) -> list[click.Parameter]:
+def _with_debug_option(params: list[_click.Parameter] | None) -> list[_click.Parameter]:
     """为命令参数列表补齐 debug 选项。"""
     normalized_params = list(params or [])
     if _has_debug_option(normalized_params):
@@ -66,12 +66,12 @@ class AlphabeticalMixedGroup(TyperGroup):
 
     def list_commands(
         self,
-        ctx: click.Context,
+        ctx: _click.Context,
     ) -> list[str]:  # type: ignore[name-defined]
         """将命令按键名进行字母排序
         
         Args:
-            ctx (click.Context): click 组件上下文
+            ctx (_click.Context): click 组件上下文
         Returns:
             list[str]: 排序后的命令名称列表
         """
