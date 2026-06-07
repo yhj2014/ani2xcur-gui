@@ -1,4 +1,9 @@
+import io
+import tarfile
+import zipfile
 from pathlib import Path
+
+import pytest
 
 from ani2xcur.file_operations.archive_manager import create_archive, extract_archive
 from ani2xcur.config_parse.win import parse_inf_file_content
@@ -119,3 +124,32 @@ def test_create_archive_accepts_single_file_path(windows_inf_file: Path, tmp_pat
     extract_archive(archive_path, extract_to)
 
     assert (extract_to / windows_inf_file.name).is_file()
+
+
+def test_extract_zip_rejects_path_traversal(tmp_path: Path):
+    archive_path = tmp_path / "unsafe.zip"
+    extract_to = tmp_path / "extract-zip"
+
+    with zipfile.ZipFile(archive_path, "w") as zf:
+        zf.writestr("../outside.txt", "unsafe")
+
+    with pytest.raises(ValueError, match="不安全"):
+        extract_archive(archive_path, extract_to)
+
+    assert not (tmp_path / "outside.txt").exists()
+
+
+def test_extract_tar_rejects_path_traversal(tmp_path: Path):
+    archive_path = tmp_path / "unsafe.tar"
+    extract_to = tmp_path / "extract-tar"
+    data = b"unsafe"
+
+    with tarfile.open(archive_path, "w") as tar_ref:
+        member = tarfile.TarInfo("../outside.txt")
+        member.size = len(data)
+        tar_ref.addfile(member, io.BytesIO(data))
+
+    with pytest.raises(ValueError, match="不安全"):
+        extract_archive(archive_path, extract_to)
+
+    assert not (tmp_path / "outside.txt").exists()
