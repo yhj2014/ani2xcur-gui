@@ -1,34 +1,34 @@
 <div align="center">
 
-<img src="assets/ani2xcur_icon.png" width="200" height="200" alt="Ani2xcur CLI">
+<img src="assets/ani2xcur_icon.png" width="200" height="200" alt="Ani2xcur">
 
-# Ani2xcur CLI
+# Ani2xcur
 
 _✨一站式鼠标指针转换与管理工具_
   <p align="center">
-    <a href="https://github.com/licyk/ani2xcur-cli/stargazers" style="margin: 2px;">
-      <img src="https://img.shields.io/github/stars/licyk/ani2xcur-cli?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Stars">
+    <a href="https://github.com/licyk/ani2xcur/stargazers" style="margin: 2px;">
+      <img src="https://img.shields.io/github/stars/licyk/ani2xcur?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Stars">
     </a>
-    <a href="https://github.com/licyk/ani2xcur-cli/forks" style="margin: 2px;">
-      <img src="https://img.shields.io/github/forks/licyk/ani2xcur-cli?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="GitHub forks">
+    <a href="https://github.com/licyk/ani2xcur/forks" style="margin: 2px;">
+      <img src="https://img.shields.io/github/forks/licyk/ani2xcur?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="GitHub forks">
     </a>
-    <a href="https://github.com/licyk/ani2xcur-cli/issues" style="margin: 2px;">
-      <img src="https://img.shields.io/github/issues/licyk/ani2xcur-cli?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Issues">
+    <a href="https://github.com/licyk/ani2xcur/issues" style="margin: 2px;">
+      <img src="https://img.shields.io/github/issues/licyk/ani2xcur?style=flat&logo=github&logoColor=silver&color=bluegreen&labelColor=grey" alt="Issues">
     </a>
-    <a href="https://github.com/licyk/ani2xcur-cli/commits/main" style="margin: 2px;">
-      <img src="https://flat.badgen.net/github/last-commit/licyk/ani2xcur-cli/main?icon=github&color=green&label=last%20commit" alt="Commit">
+    <a href="https://github.com/licyk/ani2xcur/commits/main" style="margin: 2px;">
+      <img src="https://flat.badgen.net/github/last-commit/licyk/ani2xcur/main?icon=github&color=green&label=last%20commit" alt="Commit">
     </a>
-    <a href="https://github.com/licyk/ani2xcur-cli/actions/workflows/lint.yml" style="margin: 2px;">
-      <img src="https://github.com/licyk/ani2xcur-cli/actions/workflows/lint.yml/badge.svg" alt="Ruff Lint">
+    <a href="https://github.com/licyk/ani2xcur/actions/workflows/lint.yml" style="margin: 2px;">
+      <img src="https://github.com/licyk/ani2xcur/actions/workflows/lint.yml/badge.svg" alt="Ruff Lint">
     </a>
-    <a href="https://github.com/licyk/ani2xcur-cli/actions/workflows/pytest.yml" style="margin: 2px;">
-      <img src="https://github.com/licyk/ani2xcur-cli/actions/workflows/pytest.yml/badge.svg" alt="Pytest">
+    <a href="https://github.com/licyk/ani2xcur/actions/workflows/pytest.yml" style="margin: 2px;">
+      <img src="https://github.com/licyk/ani2xcur/actions/workflows/pytest.yml/badge.svg" alt="Pytest">
     </a>
-    <a href="https://github.com/licyk/ani2xcur-cli/actions/workflows/release.yml" style="margin: 2px;">
-      <img src="https://github.com/licyk/ani2xcur-cli/actions/workflows/release.yml/badge.svg" alt="Release">
+    <a href="https://github.com/licyk/ani2xcur/actions/workflows/release.yml" style="margin: 2px;">
+      <img src="https://github.com/licyk/ani2xcur/actions/workflows/release.yml/badge.svg" alt="Release">
     </a>
-    <a href="https://github.com/licyk/ani2xcur-cli/releases" style="margin: 2px;">
-      <img src="https://img.shields.io/github/v/release/licyk/ani2xcur-cli?include_prereleases" alt="Release">
+    <a href="https://github.com/licyk/ani2xcur/releases" style="margin: 2px;">
+      <img src="https://img.shields.io/github/v/release/licyk/ani2xcur?include_prereleases" alt="Release">
     </a>
     <a href="https://pypi.org/project/ani2xcur" style="margin: 2px;">
       <img src="https://img.shields.io/pypi/v/ani2xcur" alt="PyPI">
@@ -40,7 +40,7 @@ _✨一站式鼠标指针转换与管理工具_
 
 </div>
 
-- [Ani2xcur CLI](#ani2xcur-cli)
+- [Ani2xcur](#ani2xcur)
 - [简介](#简介)
 - [功能特性](#功能特性)
 - [安装](#安装)
@@ -57,17 +57,17 @@ _✨一站式鼠标指针转换与管理工具_
   - [ImageMagick 管理](#imagemagick-管理)
     - [自动下载并安装 ImageMagick](#自动下载并安装-imagemagick)
     - [从系统中卸载 ImageMagick](#从系统中卸载-imagemagick)
-  - [更新 Ani2xcur CLI](#更新-ani2xcur-cli)
-  - [查看 Ani2xcur CLI 使用的环境变量](#查看-ani2xcur-cli-使用的环境变量)
+  - [更新 Ani2xcur](#更新-ani2xcur)
+  - [查看 Ani2xcur 使用的环境变量](#查看-ani2xcur-使用的环境变量)
   - [调试日志](#调试日志)
-  - [查看 Ani2xcur CLI 版本信息](#查看-ani2xcur-cli-版本信息)
+  - [查看 Ani2xcur 版本信息](#查看-ani2xcur-版本信息)
 - [使用的项目](#使用的项目)
 - [许可证](#许可证)
 
 ***
 
 # 简介
-Ani2xcur CLI 是一个强大且易于使用的命令行工具，专为鼠标指针主题的管理、转换和安装而设计，支持 Windows 平台与 Linux 平台。
+Ani2xcur 是一个强大且易于使用的命令行工具，专为鼠标指针主题的管理、转换和安装而设计，支持 Windows 平台与 Linux 平台。
 
 
 # 功能特性
@@ -94,7 +94,7 @@ pip install ani2xcur
 
 
 # 使用
-Ani2xcur CLI 提供了丰富的子命令来满足不同需求。可使用`--help`查看可用的命令。
+Ani2xcur 提供了丰富的子命令来满足不同需求。可使用`--help`查看可用的命令。
 
 ```bash
 ani2xcur --help
@@ -102,7 +102,7 @@ ani2xcur --help
 
 
 ## 鼠标指针格式转换
-Windows 鼠标指针主题和 Linux 鼠标指针主题并不能互相兼容，而 Ani2xcur CLI 可以将鼠标指针主题文件转换为对应平台的文件。
+Windows 鼠标指针主题和 Linux 鼠标指针主题并不能互相兼容，而 Ani2xcur 可以将鼠标指针主题文件转换为对应平台的文件。
 
 鼠标指针主题的转换功能由 Ani2xcur 内置的 Pillow 转换器完成，不需要额外安装 ImageMagick。
 
@@ -217,7 +217,7 @@ ani2xcur cursor export <指针名称> <导出路径>
 
 
 ## ImageMagick 管理
-Ani2xcur CLI 保留 ImageMagick 管理命令用于手动排障；当前内置转换器不需要安装 ImageMagick。
+Ani2xcur 保留 ImageMagick 管理命令用于手动排障；当前内置转换器不需要安装 ImageMagick。
 
 ### 自动下载并安装 ImageMagick
 ```bash
@@ -238,7 +238,7 @@ ani2xcur imagemagick uninstall
   - `-y`|`--yes`: 直接确认卸载。
 
 
-## 更新 Ani2xcur CLI
+## 更新 Ani2xcur
 ```bash
 ani2xcur update
 ```
@@ -248,7 +248,7 @@ ani2xcur update
   - `--ani2xcur-source <Git 仓库链接>`: Ani2xcur 源仓库的 Git 链接。
 
 
-## 查看 Ani2xcur CLI 使用的环境变量
+## 查看 Ani2xcur 使用的环境变量
 ```bash
 ani2xcur env
 ```
@@ -270,7 +270,7 @@ ANI2XCUR_LOGGER_LEVEL=10 ani2xcur cursor set theme Blue > log.txt 2>&1
 调试日志会记录命令、会话类型、Xcursor 相关环境变量和转换摘要，不会输出完整环境变量或光标文件二进制内容。
 
 
-## 查看 Ani2xcur CLI 版本信息
+## 查看 Ani2xcur 版本信息
 ```bash
 ani2xcur version
 ```
