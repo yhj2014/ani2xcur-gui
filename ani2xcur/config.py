@@ -27,7 +27,7 @@ IMAGE_MAGICK_WINDOWS_DOWNLOAD_URL = os.getenv(
 IMAGE_MAGICK_WINDOWS_INSTALL_PATH = Path(os.getenv("ProgramFiles", r"C:\Program Files")) / "ImageMagick-7.1.2-Q16-HDRI"
 """Windows 默认 ImageMagick 安装路径"""
 
-ANI2XCUR_REPOSITORY_URL = os.getenv("ANI2XCUR_REPOSITORY_URL", "https://github.com/licyk/ani2xcur-cli")
+ANI2XCUR_REPOSITORY_URL = os.getenv("ANI2XCUR_REPOSITORY_URL", "https://github.com/licyk/ani2xcur")
 """Ani2xcur 仓库地址"""
 
 SMART_FINDER_SEARCH_DEPTH = int(os.getenv("ANI2XCUR_SMART_FINDER_SEARCH_DEPTH", "3"))
