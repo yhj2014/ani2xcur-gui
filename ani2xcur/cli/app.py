@@ -85,8 +85,17 @@ def get_app() -> typer.Typer:
 
 
 def main() -> None:
-    """主函数"""
+    """主函数 - 默认启动 GUI，使用 --cli 或指定子命令时使用命令行模式"""
     try:
+        if len(sys.argv) == 1:
+            from ani2xcur.gui.app import run_gui
+            sys.exit(run_gui())
+
+        if "--cli" in sys.argv:
+            sys.argv.remove("--cli")
+            get_app()()
+            return
+
         get_app()()
     except Exit as e:
         sys.exit(e.exit_code)
