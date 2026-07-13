@@ -1,3 +1,3 @@
 """Ani2xcur 版本"""
 
-VERSION = "0.1.11"
+VERSION = "1.0.0"
