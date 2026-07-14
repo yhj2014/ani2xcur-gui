@@ -22,7 +22,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont
 
-from ani2xcur.gui import logger
 from ani2xcur.gui.models.cursor_info import CursorSchemeInfo
 
 

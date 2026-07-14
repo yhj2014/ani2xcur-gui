@@ -1,6 +1,5 @@
 """主题管理器"""
 
-import os
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication

@@ -1,7 +1,5 @@
 """转换页面"""
 
-from pathlib import Path
-
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -17,10 +15,8 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QSpinBox,
 )
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QFont
-
-from ani2xcur.gui import logger
 
 
 class ConvertPage(QWidget):

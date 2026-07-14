@@ -1,7 +1,5 @@
 """管理功能 Presenter"""
 
-import sys
-
 from ani2xcur.gui import logger
 from ani2xcur.gui.presenters.base_presenter import BasePresenter
 from ani2xcur.gui.models.cursor_info import ManageAction

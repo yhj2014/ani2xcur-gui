@@ -1,8 +1,5 @@
 """转换 Presenter"""
 
-import sys
-from pathlib import Path
-
 from ani2xcur.gui import logger
 from ani2xcur.gui.presenters.base_presenter import BasePresenter
 from ani2xcur.gui.models.conversion_options import ConversionOptions

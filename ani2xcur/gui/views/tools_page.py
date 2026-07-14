@@ -1,7 +1,5 @@
 """工具页面"""
 
-import sys
-
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -18,7 +16,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont
 
-from ani2xcur.gui import logger
 from ani2xcur.gui.views.log_viewer import LogViewer
 
 
