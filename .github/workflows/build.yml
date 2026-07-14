@@ -53,7 +53,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment:
-      name: ain2xcur-gui
+      name: ani2xcur-gui
     permissions:
       id-token: write
 
