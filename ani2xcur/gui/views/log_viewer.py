@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QLabel,
 )
-from PySide6.QtCore import Signal, Qt, QObject
+from PySide6.QtCore import Signal, QObject
 from PySide6.QtGui import QTextCursor, QFont
 
 from ani2xcur.gui import logger as root_logger

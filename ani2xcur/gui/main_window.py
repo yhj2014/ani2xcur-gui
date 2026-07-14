@@ -1,7 +1,5 @@
 """主窗口"""
 
-import sys
-
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -12,9 +10,8 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QAction
+from PySide6.QtGui import QAction
 
-from ani2xcur.gui import logger
 from ani2xcur.gui.utils.theme_manager import apply_theme
 
 
