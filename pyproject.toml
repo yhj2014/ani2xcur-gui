@@ -3,7 +3,7 @@ requires = ["setuptools", "pip", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ain2xcur-gui"
+name = "ani2xcur-gui"
 description = "Ani2xcur GUI - 一个功能强大的图形界面工具，用于在 Windows 和 Linux 平台上发现、转换、安装和管理鼠标指针主题。支持双向转换，可将 Linux 光标主题 (XCursor) 转为 Windows 格式 (.cur/.ani)，亦可将 Windows 主题转为 Linux 格式，并提供安装、应用和卸载鼠标主题的全套管理功能。"
 requires-python = ">=3.10"
 readme = { content-type = "text/markdown", file = "README.md" }
@@ -40,7 +40,7 @@ dependencies = [
 ]
 
 [project.scripts]
-"ain2xcur-gui" = "ani2xcur.cli.app:main"
+"ani2xcur-gui" = "ani2xcur.cli.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -22,8 +22,8 @@ def run_gui() -> int:
         logger.error("无法启动 GUI: 缺少 PySide6 依赖")
         _print_error(
             "错误: 缺少 PySide6 依赖。\n"
-            "请重新安装 ain2xcur-gui:\n"
-            "  pip install ain2xcur-gui\n"
+            "请重新安装 ani2xcur-gui:\n"
+            "  pip install ani2xcur-gui\n"
             "或直接安装 PySide6:\n"
             "  pip install PySide6"
         )
@@ -43,7 +43,7 @@ def run_gui() -> int:
 
         app.setApplicationName("Ani2xcur GUI")
         app.setApplicationDisplayName("Ani2xcur GUI")
-        app.setOrganizationName("ain2xcur-gui")
+        app.setOrganizationName("ani2xcur-gui")
 
         from ani2xcur.gui.utils.theme_manager import apply_theme
         apply_theme("Light")
